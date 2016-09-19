@@ -1,0 +1,29 @@
+html, body {
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  #renderCanvas {
+    width: 100%;
+    height: 70%;
+    touch-action: none;
+    border: 1px solid black;
+  }
+
+#container {
+  position: relative;
+}
+#container canvas, #overlay {
+  position: absolute;
+}
+
+  .bottomPanel{
+    float:bottom;
+    width: 100%;
+    height: 300px;
+    background-color: #FFFFFF;
+    z-index: 1;
+  }
