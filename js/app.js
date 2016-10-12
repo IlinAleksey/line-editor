@@ -64,6 +64,76 @@ var SimpleMovable = (function (_super) {
     };
     return SimpleMovable;
 }(BaseLineMovable));
+var LinAlgMovable = (function (_super) {
+    __extends(LinAlgMovable, _super);
+    function LinAlgMovable() {
+        _super.apply(this, arguments);
+    }
+    LinAlgMovable.prototype.rotateVectorAroundOrigin = function (vector, angle) {
+        return new BABYLON.Vector3(vector.x * Math.cos(angle) - vector.y * Math.sin(angle), vector.y * Math.cos(angle) + vector.x * Math.sin(angle), 0);
+    };
+    LinAlgMovable.prototype.rotateAroundOrigin = function (vector, pivot, angle) {
+        //console.log("rotateAroundOrigin " + vector + pivot + angle)
+        var translated = vector.subtract(pivot);
+        var rotated = this.rotateVectorAroundOrigin(translated, angle);
+        var translatedBack = rotated.add(pivot);
+        translatedBack.z = 0;
+        return translatedBack;
+    };
+    LinAlgMovable.prototype.addAngleToRotation = function (angle) {
+        this.rotation += angle;
+        if (this.rotation > Math.PI) {
+            this.rotation -= 2 * Math.PI;
+        }
+        else if (this.rotation < Math.PI) {
+            this.rotation += 2 * Math.PI;
+        }
+    };
+    LinAlgMovable.prototype.getAverage = function () {
+        var sum = new BABYLON.Vector3(0, 0, 0);
+        for (var _i = 0, _a = this.points; _i < _a.length; _i++) {
+            var position = _a[_i];
+            sum.addInPlace(position);
+        }
+        var average = sum.divide(new BABYLON.Vector3(this.points.length, this.points.length, 1));
+        return average;
+    };
+    LinAlgMovable.prototype.getAbsoluteLocation = function () {
+        return this.getAverage();
+    };
+    LinAlgMovable.prototype.setLocation = function (position) {
+        var position3d = new BABYLON.Vector3(position.x, position.y, 0);
+        var average = this.getAbsoluteLocation();
+        var diff = position3d.subtract(average);
+        diff.z = 0;
+        this.addTranslation(diff);
+    };
+    LinAlgMovable.prototype.addTranslation = function (position) {
+        for (var index in this.points) {
+            this.points[index].addInPlace(position);
+        }
+        this.lineMesh = BABYLON.Mesh.CreateLines(name, this.points, scene, true, this.lineMesh);
+    };
+    LinAlgMovable.prototype.setZRotation = function (angle) {
+        var cur = this.getZRotation();
+        var diff = angle - cur;
+        this.addZRotation(diff);
+    };
+    LinAlgMovable.prototype.addZRotation = function (angle) {
+        //console.log("angle " + angle);
+        var radians = this.toRadians(angle);
+        this.addAngleToRotation(radians);
+        var pivot = this.getAverage();
+        for (var index in this.points) {
+            this.points[index] = this.rotateAroundOrigin(this.points[index], pivot, radians);
+        }
+        this.lineMesh = BABYLON.Mesh.CreateLines(name, this.points, scene, true, this.lineMesh);
+    };
+    LinAlgMovable.prototype.getZRotation = function () {
+        return this.rotation;
+    };
+    return LinAlgMovable;
+}(BaseLineMovable));
 var BaseLineGraph = (function () {
     function BaseLineGraph(name, points, scene) {
         this.scene = scene;
@@ -220,7 +290,14 @@ var changeColorButtonClick = function () {
 var closeGraph = function () {
     plane.finishDrawing();
     //тестовая фигура
-    var simpleMovable = new SimpleMovable("simple", [new BABYLON.Vector2(20, 0), new BABYLON.Vector2(0, 20), new BABYLON.Vector2(0, 0), new BABYLON.Vector2(20, 0)], scene);
+    var points = [
+        new BABYLON.Vector2(20, 0),
+        new BABYLON.Vector2(20, 20),
+        new BABYLON.Vector2(0, 20),
+        new BABYLON.Vector2(0, 0),
+        new BABYLON.Vector2(20, 0)
+    ];
+    var simpleMovable = new LinAlgMovable("simple", points, scene);
     simpleMovable.angularSpeed = 0.1;
     simpleMovable.linearSpeed = 0.1;
     simplePath.SetMovable(simpleMovable);

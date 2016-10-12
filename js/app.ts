@@ -49,7 +49,14 @@ let closeGraph : () => any =
         plane.finishDrawing();
 
         //тестовая фигура
-        let simpleMovable = new SimpleMovable("simple", [new BABYLON.Vector2(20, 0), new BABYLON.Vector2(0, 20),new BABYLON.Vector2(0, 0), new BABYLON.Vector2(20, 0)], scene);
+        let points = [
+            new BABYLON.Vector2(20, 0),
+            new BABYLON.Vector2(20, 20),
+            new BABYLON.Vector2(0, 20),
+            new BABYLON.Vector2(0, 0),
+           new BABYLON.Vector2(20, 0)
+           ];
+        let simpleMovable = new LinAlgMovable("simple", points, scene);
         simpleMovable.angularSpeed = 0.1;
         simpleMovable.linearSpeed = 0.1;
 
