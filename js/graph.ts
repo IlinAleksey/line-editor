@@ -1,8 +1,12 @@
+/// <reference path="./actor.ts"/>
 interface InteractiveGraph{
     addPoint(point: BABYLON.Vector3) : void;
     closeGraph(): void;
     getVertices(): BABYLON.Vector3[];
+    
 }
+
+
 
 abstract class BaseLineGraph implements InteractiveGraph{
     protected lineMesh: BABYLON.LinesMesh;
@@ -16,10 +20,13 @@ abstract class BaseLineGraph implements InteractiveGraph{
             this.points.push(new BABYLON.Vector3(p.x, p.y, 0));
         }
         this.lineMesh = BABYLON.Mesh.CreateLines(name, this.points, scene, true);
+
     }
     public addPoint(point: BABYLON.Vector3) : void{
-        this.points.push(point);
-        this.lineMesh = BABYLON.Mesh.CreateLines(this.name, this.points, this.scene, true);
+
+            this.points.push(point);
+            this.lineMesh = BABYLON.Mesh.CreateLines(this.name, this.points, this.scene, true);
+
     }
     public closeGraph(): void{
         if (this.points.length >= 3){
@@ -31,12 +38,8 @@ abstract class BaseLineGraph implements InteractiveGraph{
     public getVertices(): BABYLON.Vector3[]{
         return this.points;
     }
-    
 }
 
-class SimpleGraph extends BaseLineGraph{
-    
-}
 
 class SimplePath extends BaseLineGraph{
     private currentVertex: BABYLON.Vector3;
@@ -45,6 +48,7 @@ class SimplePath extends BaseLineGraph{
     private isActive: boolean;
     private closeEnough: number = 1;
     protected movable: Movable;
+
     protected switchVertexIndex(){
         let vertices: BABYLON.Vector3[] = this.getVertices();
         if (this.currentVertexIndex == vertices.length - 1)
@@ -72,7 +76,12 @@ class SimplePath extends BaseLineGraph{
             this.isActive = true;
         }
     }
-
+    public StopMoving(): void{
+        if(this.isActive){
+            this.isActive = false;
+            this.movable = null;
+        }
+    }
 
     public Tick(deltaTime: number): void{
         if (this.isActive){
@@ -87,6 +96,7 @@ class SimplePath extends BaseLineGraph{
             }
             else{
                 let movableToNextUnit = movableToNext.normalize();
+                //console.log("movableToNextUnit " + movableToNextUnit.toString());
                 this.movable.move(movableToNextUnit, deltaTime);
                 this.movable.turn(deltaTime);
             }

@@ -10,7 +10,9 @@ interface Rotatable{
     getZRotation(): number;
 }
 
-
+interface Destroyable{
+    destroy(): void;
+}
 
 abstract class Movable implements Translatable, Rotatable{
     abstract setLocation(position: BABYLON.Vector3): void;
@@ -37,22 +39,30 @@ abstract class Movable implements Translatable, Rotatable{
         this.addZRotation(deltaAngle);
     }
 
-
 }
 
 abstract class BaseLineMovable extends Movable{
     protected lineMesh: BABYLON.LinesMesh;
     protected name: string;
-    protected points: BABYLON.Vector3[];
     protected scene: BABYLON.Scene;
-    constructor(name:string, points: BABYLON.Vector2[], scene: BABYLON.Scene){
+    protected fuck: BABYLON.Vector3[];
+    constructor(name:string, points2d: BABYLON.Vector2[], scene: BABYLON.Scene){
         super();
+        
         this.scene = scene;
-        this.points = [];
-        for (var p of points){
-            this.points.push(new BABYLON.Vector3(p.x, p.y, 0));
+        this.fuck = []
+
+        console.log(this);
+        for (var p of points2d){
+
+            this.fuck.push(new BABYLON.Vector3(p.x, p.y, 0));
+
         }
-        this.lineMesh = BABYLON.Mesh.CreateLines(name, this.points, scene, true);
+        this.lineMesh = BABYLON.Mesh.CreateLines(name, this.fuck, scene, true);
+    }
+
+    destroy(): void{
+        this.lineMesh.dispose();
     }
 }
 
@@ -96,6 +106,14 @@ class LinAlgMovable extends BaseLineMovable{
 
     protected rotation: number; 
 
+    constructor(name:string, points2d: BABYLON.Vector2[], scene: BABYLON.Scene){
+        super(name, points2d, scene);
+        //console.log(this);
+        this.linearSpeed = 0.1;
+        this.angularSpeed = 0.1;
+    }
+
+
     protected rotateVectorAroundOrigin(vector: BABYLON.Vector3, angle:number): BABYLON.Vector3
     {
         return new BABYLON.Vector3(
@@ -106,7 +124,7 @@ class LinAlgMovable extends BaseLineMovable{
 
     protected rotateAroundOrigin(vector: BABYLON.Vector3, pivot: BABYLON.Vector3, angle:number): BABYLON.Vector3
     {
-        //console.log("rotateAroundOrigin " + vector + pivot + angle)
+        console.log("rotateAroundOrigin " + vector + pivot + angle)
         let translated = vector.subtract(pivot);
         let rotated =  this.rotateVectorAroundOrigin(translated, angle);
         let translatedBack = rotated.add(pivot);
@@ -130,12 +148,14 @@ class LinAlgMovable extends BaseLineMovable{
     private getAverage(): BABYLON.Vector3
     {
         var sum = new BABYLON.Vector3(0,0,0);
-        for (let position of this.points)
+        for (let position of this.fuck)
         {
-            sum.addInPlace(position);
+            sum = sum.add(position);
             
         }
-        let average = sum.divide(new BABYLON.Vector3(this.points.length, this.points.length, 1));
+        //console.log("average");
+        //console.log(this.fuck.toString());
+        let average = sum.divide(new BABYLON.Vector3(this.fuck.length, this.fuck.length, 1));
         return average;
     }
 
@@ -155,11 +175,14 @@ class LinAlgMovable extends BaseLineMovable{
     }
     addTranslation(position: BABYLON.Vector3): void
     {
-        for (let index in this.points)
+        //console.log("addTranslation position: " + position.toString());
+        for (let index in this.fuck)
         {
-            this.points[index].addInPlace(position)
+            this.fuck[index].addInPlace(position)
         }
-        this.lineMesh = BABYLON.Mesh.CreateLines(name, this.points, scene, true, this.lineMesh)
+        //console.log("addTranslation");
+        //console.log(this.fuck.toString());
+        this.lineMesh = BABYLON.Mesh.CreateLines(name, this.fuck, scene, true, this.lineMesh)
     }
     setZRotation(angle: number): void
     {
@@ -173,11 +196,13 @@ class LinAlgMovable extends BaseLineMovable{
         let radians: number = this.toRadians(angle);
         this.addAngleToRotation(radians);
         let pivot = this.getAverage();
-        for (let index in this.points)
+        for (let index in this.fuck)
         {
-            this.points[index] = this.rotateAroundOrigin(this.points[index], pivot, radians);
+            this.fuck[index] = this.rotateAroundOrigin(this.fuck[index], pivot, radians);
         }
-        this.lineMesh = BABYLON.Mesh.CreateLines(name, this.points, scene, true, this.lineMesh);
+        //console.log("addZRotation");
+        //console.log(this.fuck.toString());
+        this.lineMesh = BABYLON.Mesh.CreateLines(name, this.fuck, scene, true, this.lineMesh);
     }
     getZRotation(): number
     {

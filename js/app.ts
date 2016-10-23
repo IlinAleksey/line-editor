@@ -1,26 +1,26 @@
 /// <reference path="./actor.ts"/>
 /// <reference path="./graph.ts"/>
 /// <reference path="./drawingPlane.ts"/>
+/// <reference path="./editor.ts"/>
 
 var canvas: HTMLCanvasElement = <HTMLCanvasElement>(document.getElementById("renderCanvas"));
 
 var engine = new BABYLON.Engine(canvas, true);
 
 //потом занести это создание прямо в плоскость, в которой рисуют
-var simplePath: SimplePath;
 
-var plane: SimpleInteractiveGraphPlane;
+
+var editor: LineEditor;
 var createScene = function () {
     var scene = new BABYLON.Scene(engine);
-    simplePath = new SimplePath("lines", [], scene);
-    plane = new SimpleInteractiveGraphPlane("plane", 400, 400, scene, simplePath);
 
+    editor = new LineEditor("editor", scene);
     var light0 = new BABYLON.PointLight("Omni", new BABYLON.Vector3(0, 10, 20), scene);
     var freeCamera = new BABYLON.FreeCamera("FreeCamera", new BABYLON.Vector3(0, 0, -30), scene);
     freeCamera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
 
     scene.onPointerDown = function (evt, pickResult) {
-        plane.onPointerEvent(evt, pickResult);
+        editor.onPointerEvent(evt, pickResult);
     };
 
     return scene;
@@ -31,7 +31,7 @@ var scene = createScene();
 engine.runRenderLoop(function () {
     scene.render();
     let deltaTime = engine.getDeltaTime();
-    simplePath.Tick(deltaTime);
+    editor.Tick(deltaTime);
 });
 
 window.addEventListener("resize", function () {
@@ -46,22 +46,12 @@ let changeColorButtonClick : () => any =
 
 let closeGraph : () => any = 
     function () : any{
-        plane.finishDrawing();
+        editor.finishEditingPath();
+    };
 
-        //тестовая фигура
-        let points = [
-            new BABYLON.Vector2(20, 0),
-            new BABYLON.Vector2(20, 20),
-            new BABYLON.Vector2(0, 20),
-            new BABYLON.Vector2(0, 0),
-           new BABYLON.Vector2(20, 0)
-           ];
-        let simpleMovable = new LinAlgMovable("simple", points, scene);
-        simpleMovable.angularSpeed = 0.1;
-        simpleMovable.linearSpeed = 0.1;
-
-        simplePath.SetMovable(simpleMovable);
-        simplePath.StartMoving();
+let finishGraph : () => any = 
+    function () : any{
+        editor.finishEditingMovable();
     };
 
 var huyButton = <HTMLButtonElement>document.getElementById("huy");
@@ -69,3 +59,6 @@ huyButton.onclick = changeColorButtonClick;
 
 var closeButton = <HTMLButtonElement>document.getElementById("close");
 closeButton.onclick = closeGraph;
+
+var finishButton = <HTMLButtonElement>document.getElementById("finish");
+finishButton.onclick = finishGraph;
