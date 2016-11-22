@@ -43,10 +43,42 @@ private finishedEditingPath: boolean;
         }
     }
     public onPointerEvent(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
-        this.simpleMovableGraph.onPointerEvent(evt, pickingInfo);
-        this.simplePath.onPointerEvent(evt, pickingInfo);
+        this.simpleMovableGraph.onPointerDown(evt, pickingInfo);
+        this.simplePath.onPointerDown(evt, pickingInfo);
     }
     public Tick(deltaTime: number){
         this.simplePath.update(deltaTime);
+    }
+}
+
+class CurveEditor{
+    protected curvePlane: LongSimpleCurvePlane;
+    private name: string;
+    private scene: BABYLON.Scene;
+    constructor(name:string, scene: BABYLON.Scene){
+        this.scene = scene;
+        this.name = name;
+        this.curvePlane = new LongSimpleCurvePlane("plane", 0, 0, scene);
+    }
+    public onPointerDown(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
+        this.curvePlane.onPointerDown(evt, pickingInfo);
+    }
+    public onPointerUp(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
+        this.curvePlane.onPointerUp(evt, pickingInfo);
+    }
+    public onPointerMove(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
+        this.curvePlane.onPointerMove(evt, pickingInfo);
+    }
+
+    public saveJsonData(): string{
+        return this.curvePlane.saveJsonData();
+    }
+
+    public loadJsonData(json: string): void{
+        this.curvePlane.loadJsonData(json);
+    }
+
+    public loadVectorData(vectorData: Vector[]): void{
+        this.curvePlane.loadVectorData(vectorData);
     }
 }

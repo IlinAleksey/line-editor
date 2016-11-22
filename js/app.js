@@ -149,6 +149,13 @@ var LinAlgMovable = (function (_super) {
     return LinAlgMovable;
 }(BaseLineMovable));
 /// <reference path="./actor.ts"/>
+var GraphPoint = (function (_super) {
+    __extends(GraphPoint, _super);
+    function GraphPoint() {
+        _super.apply(this, arguments);
+    }
+    return GraphPoint;
+}(BABYLON.Mesh));
 var BaseLineGraph = (function () {
     function BaseLineGraph(name, points, scene) {
         this.scene = scene;
@@ -173,8 +180,158 @@ var BaseLineGraph = (function () {
     BaseLineGraph.prototype.getVertices = function () {
         return this.points;
     };
+    BaseLineGraph.prototype.updateGraphPoint = function (pointIndex, newPosition) {
+    };
+    BaseLineGraph.prototype.save = function () { return ""; };
+    BaseLineGraph.prototype.load = function (json) { };
+    BaseLineGraph.prototype.loadVectorData = function (vectorData) { };
     return BaseLineGraph;
 }());
+var BaseCurveGraph = (function () {
+    function BaseCurveGraph(name, points, scene) {
+        this.scene = scene;
+        this.points = [];
+        this.discs = [];
+        for (var _i = 0, points_2 = points; _i < points_2.length; _i++) {
+            var p = points_2[_i];
+            var point = new BABYLON.Vector3(p.x, p.y, 0);
+            this.points.push(point);
+            var disc = BABYLON.Mesh.CreateDisc("disc", 20, 20, this.scene);
+            disc.translate(point, 1);
+            var material = new BABYLON.StandardMaterial("material01", scene);
+            material.emissiveColor = BABYLON.Color3.Red();
+            disc.material = material;
+            this.discs.push(disc);
+            this.discs[this.discs.length - 1].index = this.discs.length - 1;
+        }
+        this.curves = [];
+        this.initCurves();
+    }
+    BaseCurveGraph.prototype.cubicBezier = function (v0, v1, v2, v3, nb) {
+        var bez = [];
+        var step = 1 / nb;
+        var equation = function (t, val0, val1, val2, val3) {
+            var res = (1 - t) * (1 - t) * (1 - t) * val0 + 3 * t * (1 - t) * (1 - t) * val1 + 3 * t * t * (1 - t) * val2 + t * t * t * val3;
+            return res;
+        };
+        for (var i = 0; i <= 1; i += step) {
+            bez.push(new BABYLON.Vector3(equation(i, v0.x, v1.x, v2.x, v3.x), equation(i, v0.y, v1.y, v2.y, v3.y), equation(i, v0.z, v1.z, v2.z, v3.z)));
+        }
+        bez.push(v3);
+        return bez;
+    };
+    BaseCurveGraph.prototype.initCurves = function () {
+        var pointsCount = this.points.length;
+        if (pointsCount < 4) {
+            return;
+        }
+        var cubicGroupCount = Math.floor((pointsCount + 1) / 4);
+        console.log("cubicGroupCount", cubicGroupCount);
+        for (var index = 0; index < cubicGroupCount; index++) {
+            var curIndex = index;
+            var curvePoints = this.cubicBezier(this.points[index * 3 + 0], this.points[index * 3 + 1], this.points[index * 3 + 2], this.points[index * 3 + 3], 50);
+            // curIndex++;
+            // if (curIndex < this.points.length){
+            //     curvePoints.push(this.points[curIndex]);
+            //     curIndex++;
+            //     if (curIndex < this.points.length){
+            //         curvePoints.push(this.points[curIndex]);
+            //     }
+            // }
+            console.log(curvePoints);
+            this.curves[index / 4] = BABYLON.Mesh.CreateLines("name", curvePoints, this.scene, true);
+        }
+    };
+    BaseCurveGraph.prototype.addPoint = function (point) {
+        this.points.push(point);
+        var disc = BABYLON.Mesh.CreateDisc("disc", 20, 20, this.scene);
+        // let elevatedPoint = BABYLON
+        disc.translate(point, 1);
+        var material = new BABYLON.StandardMaterial("material01", scene);
+        material.emissiveColor = BABYLON.Color3.Red();
+        disc.material = material;
+        this.discs.push(disc);
+        console.log("BaseCurveGraph::addPoint ", this.discs.length);
+        this.discs[this.discs.length - 1].index = this.discs.length - 1;
+        this.updateSpline(this.discs.length - 1);
+    };
+    BaseCurveGraph.prototype.updateCubicGroup = function (cubicGroup) {
+        var curvePoints1 = this.cubicBezier(this.points[cubicGroup * 3 + 0], this.points[cubicGroup * 3 + 1], this.points[cubicGroup * 3 + 2], this.points[cubicGroup * 3 + 3], 50);
+        this.curves[cubicGroup] = BABYLON.Mesh.CreateLines("name", curvePoints1, this.scene, true, this.curves[cubicGroup]);
+    };
+    BaseCurveGraph.prototype.updateSpline = function (pointIndex) {
+        if (this.points.length < 4) {
+            return;
+        }
+        var rem = pointIndex % 3;
+        if (rem == 0 && pointIndex > 0) {
+            var cubicGroup1 = Math.floor(pointIndex / 3);
+            var cubicGroup2 = cubicGroup1 - 1;
+            if (pointIndex + 3 < this.points.length) {
+                var curvePoints1 = this.cubicBezier(this.points[cubicGroup1 * 3 + 0], this.points[cubicGroup1 * 3 + 1], this.points[cubicGroup1 * 3 + 2], this.points[cubicGroup1 * 3 + 3], 50);
+                this.curves[cubicGroup1] = BABYLON.Mesh.CreateLines("name", curvePoints1, this.scene, true, this.curves[cubicGroup1]);
+            }
+            var curvePoints2 = this.cubicBezier(this.points[cubicGroup2 * 3 + 0], this.points[cubicGroup2 * 3 + 1], this.points[cubicGroup2 * 3 + 2], this.points[cubicGroup2 * 3 + 3], 50);
+            this.curves[cubicGroup2] = BABYLON.Mesh.CreateLines("name", curvePoints2, this.scene, true, this.curves[cubicGroup2]);
+        }
+        else {
+            var cubicGroup = Math.floor(pointIndex / 3);
+            if ((cubicGroup + 1) * 3 < this.points.length) {
+                this.updateCubicGroup(cubicGroup);
+            }
+        }
+    };
+    BaseCurveGraph.prototype.updateGraphPoint = function (pointIndex, newPosition) {
+        this.points[pointIndex] = newPosition;
+        this.discs[pointIndex].position = newPosition, 1;
+        this.updateSpline(pointIndex);
+    };
+    BaseCurveGraph.prototype.closeGraph = function () {
+    };
+    BaseCurveGraph.prototype.getVertices = function () {
+        return this.points;
+    };
+    BaseCurveGraph.prototype.clear = function () {
+        this.points = [];
+        while (this.curves.length > 0) {
+            var curve = this.curves.pop();
+            curve.dispose();
+        }
+        while (this.discs.length > 0) {
+            var disc = this.discs.pop();
+            disc.dispose();
+        }
+    };
+    BaseCurveGraph.prototype.save = function () { return JSON.stringify(this.points); };
+    BaseCurveGraph.prototype.load = function (json) {
+        var tempAny = JSON.parse(json);
+        console.log(tempAny);
+        this.clear();
+        for (var _i = 0, tempAny_1 = tempAny; _i < tempAny_1.length; _i++) {
+            var point = tempAny_1[_i];
+            var tempPoint = new BABYLON.Vector3(0, 0, 0);
+            tempPoint.copyFrom(point);
+            this.addPoint(tempPoint);
+        }
+    };
+    BaseCurveGraph.prototype.loadVectorData = function (vectorData) {
+        this.clear();
+        for (var _i = 0, vectorData_1 = vectorData; _i < vectorData_1.length; _i++) {
+            var point = vectorData_1[_i];
+            var tempPoint = new BABYLON.Vector3(0, 0, 0);
+            tempPoint.copyFrom(point);
+            this.addPoint(tempPoint);
+        }
+    };
+    return BaseCurveGraph;
+}());
+var SimpleCurveGraph = (function (_super) {
+    __extends(SimpleCurveGraph, _super);
+    function SimpleCurveGraph() {
+        _super.apply(this, arguments);
+    }
+    return SimpleCurveGraph;
+}(BaseCurveGraph));
 var SimplePath = (function (_super) {
     __extends(SimplePath, _super);
     function SimplePath() {
@@ -261,22 +418,85 @@ var SimpleInteractiveGraphPlane = (function (_super) {
     __extends(SimpleInteractiveGraphPlane, _super);
     function SimpleInteractiveGraphPlane(name, width, height, scene, graph) {
         _super.call(this);
-        this.plane = BABYLON.Mesh.CreateGround(name, 400, 400, 2, scene);
-        this.plane.translate(new BABYLON.Vector3(1, 0, 0), width);
+        this.plane = BABYLON.Mesh.CreateGround(name, width, height, 2, scene);
+        this.plane.translate(new BABYLON.Vector3(1, 0, 0), 0);
         this.plane.rotate(new BABYLON.Vector3(1, 0, 0), -Math.PI / 2);
         if (graph) {
             this.graph = graph;
         }
     }
-    SimpleInteractiveGraphPlane.prototype.onPointerEvent = function (evt, pickingInfo) {
+    SimpleInteractiveGraphPlane.prototype.onPointerDown = function (evt, pickingInfo) {
+        //console.log("onPointerDown", evt);
+        console.log("onPointerDown", pickingInfo.pickedMesh.name, pickingInfo);
         if (pickingInfo.hit) {
-            if (pickingInfo.pickedMesh == this.plane) {
+            if (pickingInfo.pickedMesh == this.plane && evt.button == 0) {
                 this.addPoint(pickingInfo.pickedPoint);
             }
         }
     };
     return SimpleInteractiveGraphPlane;
 }(BaseInteractiveGraphPlane));
+var SimpleCurvePlane = (function (_super) {
+    __extends(SimpleCurvePlane, _super);
+    function SimpleCurvePlane(name, width, height, scene, graph) {
+        _super.call(this, name, width, height, scene, graph);
+        this.graph = new SimpleCurveGraph(name, [], scene);
+        this.rmbPressed = false;
+    }
+    SimpleCurvePlane.prototype.onPointerMove = function (evt, pickingInfo) {
+        var _this = this;
+        if (this.rmbPressed) {
+            if (this.graph) {
+                var newPosition = null;
+                var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh.name == _this.plane.name; });
+                if (pickinfo.hit) {
+                    newPosition = pickinfo.pickedPoint;
+                }
+                if (newPosition) {
+                    console.log("onPointerMove", newPosition, this.currentPointIndex);
+                    this.graph.updateGraphPoint(this.currentPointIndex, newPosition);
+                }
+            }
+        }
+    };
+    SimpleCurvePlane.prototype.onPointerUp = function (evt, pickingInfo) {
+        this.rmbPressed = false;
+    };
+    SimpleCurvePlane.prototype.onPointerDown = function (evt, pickingInfo) {
+        //super.onPointerDown(evt, pickingInfo);
+        var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh.name == "disc"; });
+        if (pickinfo.hit) {
+            var indexMesh = pickingInfo.pickedMesh;
+            console.log(pickinfo.pickedMesh.index);
+            this.currentPointIndex = pickinfo.pickedMesh.index;
+            this.rmbPressed = true;
+            console.log("onPointerDown", this.currentPointIndex);
+        }
+        else {
+            var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh !== this.plane; });
+            if (pickinfo.hit) {
+                this.addPoint(pickingInfo.pickedPoint);
+            }
+        }
+    };
+    SimpleCurvePlane.prototype.saveJsonData = function () {
+        return this.graph.save();
+    };
+    SimpleCurvePlane.prototype.loadJsonData = function (json) {
+        this.graph.load(json);
+    };
+    SimpleCurvePlane.prototype.loadVectorData = function (vectorData) {
+        this.graph.loadVectorData(vectorData);
+    };
+    return SimpleCurvePlane;
+}(SimpleInteractiveGraphPlane));
+var LongSimpleCurvePlane = (function (_super) {
+    __extends(LongSimpleCurvePlane, _super);
+    function LongSimpleCurvePlane(name, width, height, scene, graph) {
+        _super.call(this, name, 1300, 600, scene, graph);
+    }
+    return LongSimpleCurvePlane;
+}(SimpleCurvePlane));
 var SimplePathPlane = (function (_super) {
     __extends(SimplePathPlane, _super);
     function SimplePathPlane(name, width, height, scene, graph) {
@@ -302,8 +522,8 @@ var SimpleMovablePlane = (function (_super) {
     SimpleMovablePlane.prototype.buildMovable = function (name, scene) {
         var points = this.graph.getVertices();
         var points2D = [];
-        for (var _i = 0, points_2 = points; _i < points_2.length; _i++) {
-            var point = points_2[_i];
+        for (var _i = 0, points_3 = points; _i < points_3.length; _i++) {
+            var point = points_3[_i];
             points2D.push(new BABYLON.Vector2(point.x, point.y));
         }
         console.log("before" + points2D);
@@ -333,8 +553,8 @@ var LineEditor = (function () {
         if (this.finishedEditingMovable && this.finishedEditingPath) {
             var points = this.simpleMovableGraph.graph.getVertices();
             var points2D = [];
-            for (var _i = 0, points_3 = points; _i < points_3.length; _i++) {
-                var point = points_3[_i];
+            for (var _i = 0, points_4 = points; _i < points_4.length; _i++) {
+                var point = points_4[_i];
                 points2D.push(new BABYLON.Vector2(point.x, point.y));
             }
             console.log("before" + points2D);
@@ -345,30 +565,301 @@ var LineEditor = (function () {
         }
     };
     LineEditor.prototype.onPointerEvent = function (evt, pickingInfo) {
-        this.simpleMovableGraph.onPointerEvent(evt, pickingInfo);
-        this.simplePath.onPointerEvent(evt, pickingInfo);
+        this.simpleMovableGraph.onPointerDown(evt, pickingInfo);
+        this.simplePath.onPointerDown(evt, pickingInfo);
     };
     LineEditor.prototype.Tick = function (deltaTime) {
         this.simplePath.update(deltaTime);
     };
     return LineEditor;
 }());
+var CurveEditor = (function () {
+    function CurveEditor(name, scene) {
+        this.scene = scene;
+        this.name = name;
+        this.curvePlane = new LongSimpleCurvePlane("plane", 0, 0, scene);
+    }
+    CurveEditor.prototype.onPointerDown = function (evt, pickingInfo) {
+        this.curvePlane.onPointerDown(evt, pickingInfo);
+    };
+    CurveEditor.prototype.onPointerUp = function (evt, pickingInfo) {
+        this.curvePlane.onPointerUp(evt, pickingInfo);
+    };
+    CurveEditor.prototype.onPointerMove = function (evt, pickingInfo) {
+        this.curvePlane.onPointerMove(evt, pickingInfo);
+    };
+    CurveEditor.prototype.saveJsonData = function () {
+        return this.curvePlane.saveJsonData();
+    };
+    CurveEditor.prototype.loadJsonData = function (json) {
+        this.curvePlane.loadJsonData(json);
+    };
+    CurveEditor.prototype.loadVectorData = function (vectorData) {
+        this.curvePlane.loadVectorData(vectorData);
+    };
+    return CurveEditor;
+}());
+var ilyinName = [
+    {
+        "x": -516.9999671300253,
+        "y": 182.5,
+        "z": 3.552713678800501e-14
+    },
+    {
+        "x": -594.9999621709188,
+        "y": 19.500000000000007,
+        "z": 3.552713678800501e-15
+    },
+    {
+        "x": -551.9999649047851,
+        "y": -71.5,
+        "z": -2.1316282072803006e-14
+    },
+    {
+        "x": -449.9999713897705,
+        "y": -84.49999999999999,
+        "z": -2.1316282072803006e-14
+    },
+    {
+        "x": -367.9999766031901,
+        "y": -93.5,
+        "z": -2.4868995751603507e-14
+    },
+    {
+        "x": -292.99998137156166,
+        "y": 100.50000000000001,
+        "z": 2.1316282072803006e-14
+    },
+    {
+        "x": -329.99997901916504,
+        "y": 194.5,
+        "z": 4.263256414560601e-14
+    },
+    {
+        "x": -247.9999842325846,
+        "y": -146.49999999999997,
+        "z": -3.197442310920451e-14
+    },
+    {
+        "x": -400.99997450510665,
+        "y": -136.49999999999997,
+        "z": -3.552713678800501e-14
+    },
+    {
+        "x": -186.99998811086022,
+        "y": -26.500000000000018,
+        "z": -7.105427357601002e-15
+    },
+    {
+        "x": -173.99998893737796,
+        "y": -105.50000000000001,
+        "z": -2.4868995751603507e-14
+    },
+    {
+        "x": -103.99999338785803,
+        "y": -54.49999999999999,
+        "z": -1.4210854715202004e-14
+    },
+    {
+        "x": -122.99999217987065,
+        "y": 116.50000000000001,
+        "z": 2.1316282072803006e-14
+    },
+    {
+        "x": -92.99999408721928,
+        "y": -116.49999999999999,
+        "z": -2.4868995751603507e-14
+    },
+    {
+        "x": -51.99999669392906,
+        "y": -78.50000000000001,
+        "z": -2.1316282072803006e-14
+    },
+    {
+        "x": -26.999998283386187,
+        "y": 66.5,
+        "z": 1.4210854715202004e-14
+    },
+    {
+        "x": -38.9999975204468,
+        "y": -82.49999999999997,
+        "z": -2.1316282072803006e-14
+    },
+    {
+        "x": 14.999999046325684,
+        "y": -91.49999999999999,
+        "z": -2.4868995751603507e-14
+    },
+    {
+        "x": 46.999997011820575,
+        "y": -20.49999999999998,
+        "z": -7.105427357601002e-15
+    },
+    {
+        "x": 69.99999554951992,
+        "y": 42.499999999999986,
+        "z": 7.105427357601002e-15
+    },
+    {
+        "x": -29.999998092651367,
+        "y": -11.500000000000023,
+        "z": -7.105427357601002e-15
+    },
+    {
+        "x": -27.99999821980795,
+        "y": -25.499999999999975,
+        "z": -7.105427357601002e-15
+    },
+    {
+        "x": 87.99999440511058,
+        "y": 21.499999999999986,
+        "z": 3.552713678800501e-15
+    },
+    {
+        "x": 111.9999928792318,
+        "y": 28.499999999999996,
+        "z": 3.552713678800501e-15
+    },
+    {
+        "x": 121.99999224344899,
+        "y": 84.50000000000001,
+        "z": 1.7763568394002505e-14
+    },
+    {
+        "x": 94.9999939600626,
+        "y": -52.49999999999998,
+        "z": -1.0658141036401503e-14
+    },
+    {
+        "x": 166.99998938242604,
+        "y": -96.49999999999999,
+        "z": -2.4868995751603507e-14
+    },
+    {
+        "x": 213.9999863942464,
+        "y": -20.49999999999998,
+        "z": -7.105427357601002e-15
+    },
+    {
+        "x": 227.99998550415043,
+        "y": 32.499999999999986,
+        "z": 3.552713678800501e-15
+    },
+    {
+        "x": 229.99998537699375,
+        "y": 64.49999999999999,
+        "z": 1.7763568394002505e-14
+    },
+    {
+        "x": 226.99998556772877,
+        "y": 89.50000000000001,
+        "z": 2.1316282072803006e-14
+    },
+    {
+        "x": 244.99998442331943,
+        "y": -5.499999999999984,
+        "z": 0
+    },
+    {
+        "x": 229.99998537699375,
+        "y": -49.49999999999999,
+        "z": -1.4210854715202004e-14
+    },
+    {
+        "x": 285.99998181660965,
+        "y": -35.49999999999997,
+        "z": -7.105427357601002e-15
+    },
+    {
+        "x": 325.99997927347823,
+        "y": -0.4999999999999858,
+        "z": 0
+    },
+    {
+        "x": 349.9999777475992,
+        "y": 45.5,
+        "z": 7.105427357601002e-15
+    },
+    {
+        "x": 367.9999766031901,
+        "y": 121.50000000000001,
+        "z": 2.842170943040401e-14
+    },
+    {
+        "x": 377.9999759674073,
+        "y": 32.499999999999986,
+        "z": 3.552713678800501e-15
+    },
+    {
+        "x": 398.9999746322631,
+        "y": -5.499999999999984,
+        "z": 0
+    },
+    {
+        "x": 388.9999752680461,
+        "y": -49.49999999999999,
+        "z": -1.4210854715202004e-14
+    },
+    {
+        "x": 385.99997545878097,
+        "y": 84.50000000000001,
+        "z": 1.7763568394002505e-14
+    },
+    {
+        "x": 464.9999704360962,
+        "y": 15.500000000000014,
+        "z": 3.552713678800501e-15
+    },
+    {
+        "x": 436.99997221628837,
+        "y": 131.5,
+        "z": 2.842170943040401e-14
+    },
+    {
+        "x": 457.9999708811442,
+        "y": 50.5,
+        "z": 7.105427357601002e-15
+    },
+    {
+        "x": 461.999970626831,
+        "y": -94.49999999999997,
+        "z": -2.4868995751603507e-14
+    },
+    {
+        "x": 549.9999650319418,
+        "y": 2.499999999999999,
+        "z": 0
+    }
+];
 /// <reference path="./actor.ts"/>
 /// <reference path="./graph.ts"/>
 /// <reference path="./drawingPlane.ts"/>
 /// <reference path="./editor.ts"/>
+/// <reference path="./ilyin.ts"/>
 var canvas = (document.getElementById("renderCanvas"));
 var engine = new BABYLON.Engine(canvas, true);
 //потом занести это создание прямо в плоскость, в которой рисуют
 var editor;
 var createScene = function () {
     var scene = new BABYLON.Scene(engine);
-    editor = new LineEditor("editor", scene);
     var light0 = new BABYLON.PointLight("Omni", new BABYLON.Vector3(0, 10, 20), scene);
     var freeCamera = new BABYLON.FreeCamera("FreeCamera", new BABYLON.Vector3(0, 0, -30), scene);
     freeCamera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
+    // let curveGraph: SimpleCurveGraph = new SimpleCurveGraph("new graph", [new BABYLON.Vector2(0,0),
+    //  new BABYLON.Vector2(0,100),
+    //   new BABYLON.Vector2(100,100),new BABYLON.Vector2(200,200)], scene)
+    // curveGraph.addPoint(new BABYLON.Vector3(300,0, 0));
+    // curveGraph.addPoint(new BABYLON.Vector3(300,50, 0));
+    // curveGraph.addPoint(new BABYLON.Vector3(300,100, 0));
+    editor = new CurveEditor("editor", scene);
     scene.onPointerDown = function (evt, pickResult) {
-        editor.onPointerEvent(evt, pickResult);
+        editor.onPointerDown(evt, pickResult);
+    };
+    scene.onPointerUp = function (evt, pickResult) {
+        editor.onPointerUp(evt, pickResult);
+    };
+    scene.onPointerMove = function (evt, pickResult) {
+        editor.onPointerMove(evt, pickResult);
     };
     return scene;
 };
@@ -376,7 +867,7 @@ var scene = createScene();
 engine.runRenderLoop(function () {
     scene.render();
     var deltaTime = engine.getDeltaTime();
-    editor.Tick(deltaTime);
+    // editor.Tick(deltaTime);
 });
 window.addEventListener("resize", function () {
     engine.resize();
@@ -385,10 +876,21 @@ var changeColorButtonClick = function () {
     scene.clearColor = new BABYLON.Color3(1, 1, 0);
 };
 var closeGraph = function () {
-    editor.finishEditingPath();
+    //editor.finishEditingPath();
 };
 var finishGraph = function () {
-    editor.finishEditingMovable();
+    //editor.finishEditingMovable();
+};
+var saveJson = function () {
+    var textarea = document.getElementById("json_save");
+    textarea.value = editor.saveJsonData();
+};
+var loadJson = function () {
+    var textarea = document.getElementById("json_save");
+    editor.loadJsonData(textarea.value);
+};
+var loadName = function () {
+    editor.loadVectorData(ilyinName);
 };
 var huyButton = document.getElementById("huy");
 huyButton.onclick = changeColorButtonClick;
@@ -396,3 +898,9 @@ var closeButton = document.getElementById("close");
 closeButton.onclick = closeGraph;
 var finishButton = document.getElementById("finish");
 finishButton.onclick = finishGraph;
+var saveButton = document.getElementById("save");
+saveButton.onclick = saveJson;
+var loadButton = document.getElementById("load");
+loadButton.onclick = loadJson;
+var nameButton = document.getElementById("name");
+nameButton.onclick = loadName;

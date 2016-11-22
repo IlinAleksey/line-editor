@@ -1,7 +1,7 @@
 /// <reference path="./graph.ts"/>
 interface DrawingPlane{
     addPoint(point: BABYLON.Vector3) : void;
-    onPointerEvent(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void;
+    onPointerDown(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void;
     finishDrawing(): void; 
     disableEditing(): void;
     enableEditing(): void;
@@ -40,7 +40,7 @@ abstract class BaseInteractiveGraphPlane implements DrawingPlane{
     enableEditing(): void{
         this.isActive = true;
     }
-    abstract onPointerEvent(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void;
+    abstract onPointerDown(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void;
 }
 
 class SimpleInteractiveGraphPlane extends BaseInteractiveGraphPlane{
@@ -48,8 +48,8 @@ class SimpleInteractiveGraphPlane extends BaseInteractiveGraphPlane{
     public  graph: InteractiveGraph;
     constructor (name: string, width: number, height:number, scene: BABYLON.Scene, graph?: InteractiveGraph){
         super();
-        this.plane =  BABYLON.Mesh.CreateGround(name, 400, 400, 2, scene);
-        this.plane.translate(new BABYLON.Vector3(1,0,0), width);
+        this.plane =  BABYLON.Mesh.CreateGround(name, width, height, 2, scene);
+        this.plane.translate(new BABYLON.Vector3(1,0,0), 0);
         this.plane.rotate(new BABYLON.Vector3(1,0,0), -Math.PI / 2);
         if (graph){
             this.graph = graph;
@@ -57,16 +57,87 @@ class SimpleInteractiveGraphPlane extends BaseInteractiveGraphPlane{
         
     }
     
-    onPointerEvent(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
-        
+    public onPointerDown(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
+        //console.log("onPointerDown", evt);
+        console.log("onPointerDown", pickingInfo.pickedMesh.name, pickingInfo);
         if(pickingInfo.hit){
-            if(pickingInfo.pickedMesh == this.plane)
+            if(pickingInfo.pickedMesh == this.plane && evt.button == 0)
             {
+                
                 this.addPoint(pickingInfo.pickedPoint);
             }
         }
     }
     
+}
+
+class SimpleCurvePlane extends SimpleInteractiveGraphPlane{
+    private rmbPressed: boolean;
+    private currentPointIndex: number;
+    constructor (name: string, width: number, height:number, scene: BABYLON.Scene, graph?: InteractiveGraph){
+        super(name, width, height, scene, graph);
+        this.graph = new SimpleCurveGraph(name, [], scene);
+        this.rmbPressed = false;
+    }
+    public onPointerMove(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
+        if (this.rmbPressed){
+            if (this.graph){
+                let newPosition: BABYLON.Vector3 = null;
+                var pickinfo = scene.pick(scene.pointerX, scene.pointerY, (mesh) => { return mesh.name == this.plane.name; });
+                if (pickinfo.hit) {
+                    newPosition = pickinfo.pickedPoint;
+                }
+                
+                if (newPosition){
+                    console.log("onPointerMove", newPosition, this.currentPointIndex);
+                    this.graph.updateGraphPoint(this.currentPointIndex, newPosition);
+                }
+                
+            }
+        }
+    }
+    public onPointerUp(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
+        this.rmbPressed = false;
+    }
+    public onPointerDown(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
+        //super.onPointerDown(evt, pickingInfo);
+        var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh.name == "disc"; });
+        if(pickinfo.hit){
+                
+                let indexMesh = pickingInfo.pickedMesh as any;
+                console.log((<any>pickinfo.pickedMesh).index);
+                this.currentPointIndex = (<any>pickinfo.pickedMesh).index;
+                this.rmbPressed = true;
+                console.log("onPointerDown", this.currentPointIndex);
+
+        }
+        else{
+var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh !== this.plane; });
+         if(pickinfo.hit){
+
+                this.addPoint(pickingInfo.pickedPoint);
+
+        }
+        }
+        
+
+    }
+    public saveJsonData() : string{
+        return this.graph.save();
+    }
+
+    public loadJsonData(json: string): void{
+        this.graph.load(json);
+    }
+    public loadVectorData(vectorData: Vector[]): void{
+        this.graph.loadVectorData(vectorData);
+    }
+}
+
+class LongSimpleCurvePlane extends SimpleCurvePlane{
+    constructor (name: string, width: number, height:number, scene: BABYLON.Scene, graph?: InteractiveGraph){
+        super(name, 1300, 600, scene, graph);
+    }
 }
 
 class SimplePathPlane extends SimpleInteractiveGraphPlane implements PathEditor{
