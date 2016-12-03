@@ -2,8 +2,40 @@
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "0.1.0",
-    "command": "tsc",
-    "isShellCommand": true,
-    "args": ["-p", "."],
-    "problemMatcher": "$tsc"
+    "command": "build.bat",
+    "args": [" "],
+    "showOutput": "always",
+    "isShellCommand": true
+    // "tasks": [
+    //     // {
+
+    //     //     "taskName": "hey",
+    //     //     "suppressTaskName": true,
+    //     //     "args": ["tsc -p ."],
+    //     //     "isBuildCommand": true
+    //     // },
+    //     // {
+
+    //     //     "taskName": "arbitrary",
+    //     //     "suppressTaskName": true,
+    //     //     "args": ["tsc -p ./arbitrary/tsconfig.json"],
+    //     //     "isBuildCommand": true
+    //     // },
+    //     {
+
+    //         "taskName": "huhu",
+    //         "suppressTaskName": true,
+    //         "args": ["echo wow"],
+    //         "isBuildCommand": true
+    //     },
+    //     {
+
+    //         "taskName": "huasdfasdfhu",
+    //         "suppressTaskName": true,
+    //         "args": ["echo shit"],
+    //         "isBuildCommand": true
+    //     }
+    // ]
+    
+    //"problemMatcher": "$tsc"
 }

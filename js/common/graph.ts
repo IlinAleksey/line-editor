@@ -77,7 +77,7 @@ abstract class BaseCurveGraph implements InteractiveGraph{
 	  bez.push(v3);
 	  return bez;
     }
-    private initCurves(){
+    protected initCurves(){
         let pointsCount = this.points.length;
         if (pointsCount < 4){
             return;

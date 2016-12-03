@@ -6,8 +6,9 @@
       "js/common/actor.ts",
       "js/common/drawingPlane.ts",
       "js/common/editor.ts",
-      "js/common/graph.ts.ts",
+      "js/common/graph.ts",
       "js/common/ilyin.ts",
-      "js/bezierName/app.ts"
+      "js/bezierName/app.ts",
+      "js/babylon/babylon.2.4.d.ts"
     ]
 }
