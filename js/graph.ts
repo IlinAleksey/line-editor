@@ -9,6 +9,11 @@ interface InteractiveGraph{
     loadVectorData(vectorData: Vector[]): void;
 }
 
+interface IndexedCurvePoint{
+    pointIndex: number;
+    curveIndex: number;
+}
+
 class GraphPoint extends BABYLON.Mesh{
     public index;
 }
@@ -58,6 +63,7 @@ abstract class BaseCurveGraph implements InteractiveGraph{
     protected curves: BABYLON.LinesMesh[];
     protected discs: any[];
     protected scene: BABYLON.Scene;
+    protected graphIndex: number;
     private cubicBezier(v0: BABYLON.Vector3, v1: BABYLON.Vector3, v2: BABYLON.Vector3, v3: BABYLON.Vector3, nb: number){
         let bez:BABYLON.Vector3[]  = [];
 	    var step = 1 / nb;
@@ -94,7 +100,8 @@ abstract class BaseCurveGraph implements InteractiveGraph{
             this.curves[index/4] =  BABYLON.Mesh.CreateLines("name", curvePoints, this.scene, true);
         }
     }
-    constructor(name:string, points: BABYLON.Vector2[], scene: BABYLON.Scene){
+    constructor(name:string, points: BABYLON.Vector2[], scene: BABYLON.Scene, graphIndex: number = 0){
+        this.graphIndex = graphIndex;
         this.scene = scene;
         this.points = [];
         this.discs = [];
@@ -127,6 +134,7 @@ abstract class BaseCurveGraph implements InteractiveGraph{
             this.discs.push(disc);
             console.log("BaseCurveGraph::addPoint ", this.discs.length);
             this.discs[this.discs.length - 1].index = this.discs.length - 1;
+            this.discs[this.discs.length - 1].curveIndex = this.graphIndex;
 
             this.updateSpline(this.discs.length - 1);
 

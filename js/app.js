@@ -188,7 +188,9 @@ var BaseLineGraph = (function () {
     return BaseLineGraph;
 }());
 var BaseCurveGraph = (function () {
-    function BaseCurveGraph(name, points, scene) {
+    function BaseCurveGraph(name, points, scene, graphIndex) {
+        if (graphIndex === void 0) { graphIndex = 0; }
+        this.graphIndex = graphIndex;
         this.scene = scene;
         this.points = [];
         this.discs = [];
@@ -253,6 +255,7 @@ var BaseCurveGraph = (function () {
         this.discs.push(disc);
         console.log("BaseCurveGraph::addPoint ", this.discs.length);
         this.discs[this.discs.length - 1].index = this.discs.length - 1;
+        this.discs[this.discs.length - 1].curveIndex = this.graphIndex;
         this.updateSpline(this.discs.length - 1);
     };
     BaseCurveGraph.prototype.updateCubicGroup = function (cubicGroup) {
@@ -497,6 +500,66 @@ var LongSimpleCurvePlane = (function (_super) {
     }
     return LongSimpleCurvePlane;
 }(SimpleCurvePlane));
+var ComplexCurvePlane = (function (_super) {
+    __extends(ComplexCurvePlane, _super);
+    function ComplexCurvePlane(name, width, height, scene, graph) {
+        _super.call(this, name, 1300, 600, scene, graph);
+        this.curveArray = new Array();
+        this.lmbPressed = false;
+    }
+    ComplexCurvePlane.prototype.onPointerMove = function (evt, pickingInfo) {
+        var _this = this;
+        if (this.lmbPressed) {
+            var newPosition = null;
+            var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh.name == _this.plane.name; });
+            if (pickinfo.hit) {
+                newPosition = pickinfo.pickedPoint;
+            }
+            if (newPosition) {
+                console.log("onPointerMove", newPosition, this.currentPointIndex, this.currentCurveIndex);
+                if (this.curveArray[this.currentCurveIndex]) {
+                    this.curveArray[this.currentCurveIndex].updateGraphPoint(this.currentPointIndex, newPosition);
+                }
+            }
+        }
+    };
+    ComplexCurvePlane.prototype.onPointerUp = function (evt, pickingInfo) {
+        this.lmbPressed = false;
+    };
+    ComplexCurvePlane.prototype.onPointerDown = function (evt, pickingInfo) {
+        //super.onPointerDown(evt, pickingInfo);
+        var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh.name == "disc"; });
+        if (pickinfo.hit) {
+            console.log(pickinfo.pickedMesh.index);
+            this.currentPointIndex = pickinfo.pickedMesh.index;
+            this.currentCurveIndex = pickinfo.pickedMesh.curveIndex;
+            this.lmbPressed = true;
+            console.log("onPointerDown", this.currentPointIndex);
+        }
+        else {
+            var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh !== this.plane; });
+            if (pickinfo.hit) {
+                this.addPoint(pickingInfo.pickedPoint);
+            }
+        }
+    };
+    ComplexCurvePlane.prototype.saveJsonData = function () {
+        return this.graph.save();
+    };
+    ComplexCurvePlane.prototype.loadJsonData = function (json) {
+        this.graph.load(json);
+    };
+    ComplexCurvePlane.prototype.loadVectorData = function (vectorData) {
+        this.graph.loadVectorData(vectorData);
+    };
+    ComplexCurvePlane.prototype.loadComplexVectorData = function (complexVectorData) {
+        for (var index = 0; index < complexVectorData.length; index++) {
+            this.curveArray[index] = new SimpleCurveGraph(name, [], scene, index);
+            this.curveArray[index].loadVectorData(complexVectorData[index]);
+        }
+    };
+    return ComplexCurvePlane;
+}(SimpleInteractiveGraphPlane));
 var SimplePathPlane = (function (_super) {
     __extends(SimplePathPlane, _super);
     function SimplePathPlane(name, width, height, scene, graph) {
@@ -598,6 +661,35 @@ var CurveEditor = (function () {
         this.curvePlane.loadVectorData(vectorData);
     };
     return CurveEditor;
+}());
+var NameEditor = (function () {
+    function NameEditor(name, scene) {
+        this.scene = scene;
+        this.name = name;
+        this.curvePlane = new ComplexCurvePlane("plane", 0, 0, scene);
+    }
+    NameEditor.prototype.onPointerDown = function (evt, pickingInfo) {
+        this.curvePlane.onPointerDown(evt, pickingInfo);
+    };
+    NameEditor.prototype.onPointerUp = function (evt, pickingInfo) {
+        this.curvePlane.onPointerUp(evt, pickingInfo);
+    };
+    NameEditor.prototype.onPointerMove = function (evt, pickingInfo) {
+        this.curvePlane.onPointerMove(evt, pickingInfo);
+    };
+    NameEditor.prototype.saveJsonData = function () {
+        return this.curvePlane.saveJsonData();
+    };
+    NameEditor.prototype.loadJsonData = function (json) {
+        this.curvePlane.loadJsonData(json);
+    };
+    NameEditor.prototype.loadVectorData = function (vectorData) {
+        this.curvePlane.loadVectorData(vectorData);
+    };
+    NameEditor.prototype.loadComplexVectorData = function (complexVectorData) {
+        this.curvePlane.loadComplexVectorData(complexVectorData);
+    };
+    return NameEditor;
 }());
 var ilyinName = [
     {
@@ -831,6 +923,244 @@ var ilyinName = [
         "z": 0
     }
 ];
+var complexIlyinName = [[
+        {
+            "x": -516.9999671300253,
+            "y": 182.5,
+            "z": 3.552713678800501e-14
+        },
+        {
+            "x": -594.9999621709188,
+            "y": 19.500000000000007,
+            "z": 3.552713678800501e-15
+        },
+        {
+            "x": -551.9999649047851,
+            "y": -71.5,
+            "z": -2.1316282072803006e-14
+        },
+        {
+            "x": -449.9999713897705,
+            "y": -84.49999999999999,
+            "z": -2.1316282072803006e-14
+        },
+        {
+            "x": -367.9999766031901,
+            "y": -93.5,
+            "z": -2.4868995751603507e-14
+        },
+        {
+            "x": -292.99998137156166,
+            "y": 100.50000000000001,
+            "z": 2.1316282072803006e-14
+        },
+        {
+            "x": -329.99997901916504,
+            "y": 194.5,
+            "z": 4.263256414560601e-14
+        },
+        {
+            "x": -247.9999842325846,
+            "y": -146.49999999999997,
+            "z": -3.197442310920451e-14
+        },
+        {
+            "x": -400.99997450510665,
+            "y": -136.49999999999997,
+            "z": -3.552713678800501e-14
+        },
+        {
+            "x": -186.99998811086022,
+            "y": -26.500000000000018,
+            "z": -7.105427357601002e-15
+        }], [
+        {
+            "x": -186.99998811086022,
+            "y": -26.500000000000018,
+            "z": -7.105427357601002e-15
+        },
+        {
+            "x": -173.99998893737796,
+            "y": -105.50000000000001,
+            "z": -2.4868995751603507e-14
+        },
+        {
+            "x": -103.99999338785803,
+            "y": -54.49999999999999,
+            "z": -1.4210854715202004e-14
+        },
+        {
+            "x": -122.99999217987065,
+            "y": 116.50000000000001,
+            "z": 2.1316282072803006e-14
+        },
+        {
+            "x": -92.99999408721928,
+            "y": -116.49999999999999,
+            "z": -2.4868995751603507e-14
+        },
+        {
+            "x": -51.99999669392906,
+            "y": -78.50000000000001,
+            "z": -2.1316282072803006e-14
+        },
+        {
+            "x": -26.999998283386187,
+            "y": 66.5,
+            "z": 1.4210854715202004e-14
+        }], [
+        {
+            "x": -26.999998283386187,
+            "y": 66.5,
+            "z": 1.4210854715202004e-14
+        },
+        {
+            "x": -38.9999975204468,
+            "y": -82.49999999999997,
+            "z": -2.1316282072803006e-14
+        },
+        {
+            "x": 14.999999046325684,
+            "y": -91.49999999999999,
+            "z": -2.4868995751603507e-14
+        },
+        {
+            "x": 46.999997011820575,
+            "y": -20.49999999999998,
+            "z": -7.105427357601002e-15
+        },
+        {
+            "x": 69.99999554951992,
+            "y": 42.499999999999986,
+            "z": 7.105427357601002e-15
+        },
+        {
+            "x": -29.999998092651367,
+            "y": -11.500000000000023,
+            "z": -7.105427357601002e-15
+        },
+        {
+            "x": -27.99999821980795,
+            "y": -25.499999999999975,
+            "z": -7.105427357601002e-15
+        },
+        {
+            "x": 87.99999440511058,
+            "y": 21.499999999999986,
+            "z": 3.552713678800501e-15
+        },
+        {
+            "x": 111.9999928792318,
+            "y": 28.499999999999996,
+            "z": 3.552713678800501e-15
+        },
+        {
+            "x": 121.99999224344899,
+            "y": 84.50000000000001,
+            "z": 1.7763568394002505e-14
+        }], [
+        {
+            "x": 121.99999224344899,
+            "y": 84.50000000000001,
+            "z": 1.7763568394002505e-14
+        },
+        {
+            "x": 94.9999939600626,
+            "y": -52.49999999999998,
+            "z": -1.0658141036401503e-14
+        },
+        {
+            "x": 166.99998938242604,
+            "y": -96.49999999999999,
+            "z": -2.4868995751603507e-14
+        },
+        {
+            "x": 213.9999863942464,
+            "y": -20.49999999999998,
+            "z": -7.105427357601002e-15
+        },
+        {
+            "x": 227.99998550415043,
+            "y": 32.499999999999986,
+            "z": 3.552713678800501e-15
+        },
+        {
+            "x": 229.99998537699375,
+            "y": 64.49999999999999,
+            "z": 1.7763568394002505e-14
+        },
+        {
+            "x": 226.99998556772877,
+            "y": 89.50000000000001,
+            "z": 2.1316282072803006e-14
+        },
+        {
+            "x": 244.99998442331943,
+            "y": -5.499999999999984,
+            "z": 0
+        },
+        {
+            "x": 229.99998537699375,
+            "y": -49.49999999999999,
+            "z": -1.4210854715202004e-14
+        },
+        {
+            "x": 285.99998181660965,
+            "y": -35.49999999999997,
+            "z": -7.105427357601002e-15
+        }
+    ], [
+        {
+            "x": 367.9999766031901,
+            "y": 121.50000000000001,
+            "z": 2.842170943040401e-14
+        },
+        {
+            "x": 377.9999759674073,
+            "y": 32.499999999999986,
+            "z": 3.552713678800501e-15
+        },
+        {
+            "x": 398.9999746322631,
+            "y": -5.499999999999984,
+            "z": 0
+        },
+        {
+            "x": 388.9999752680461,
+            "y": -49.49999999999999,
+            "z": -1.4210854715202004e-14
+        },
+        {
+            "x": 385.99997545878097,
+            "y": 84.50000000000001,
+            "z": 1.7763568394002505e-14
+        },
+        {
+            "x": 464.9999704360962,
+            "y": 15.500000000000014,
+            "z": 3.552713678800501e-15
+        },
+        {
+            "x": 436.99997221628837,
+            "y": 131.5,
+            "z": 2.842170943040401e-14
+        },
+        {
+            "x": 457.9999708811442,
+            "y": 50.5,
+            "z": 7.105427357601002e-15
+        },
+        {
+            "x": 461.999970626831,
+            "y": -94.49999999999997,
+            "z": -2.4868995751603507e-14
+        },
+        {
+            "x": 549.9999650319418,
+            "y": 2.499999999999999,
+            "z": 0
+        }
+    ]];
 /// <reference path="./actor.ts"/>
 /// <reference path="./graph.ts"/>
 /// <reference path="./drawingPlane.ts"/>
@@ -851,7 +1181,7 @@ var createScene = function () {
     // curveGraph.addPoint(new BABYLON.Vector3(300,0, 0));
     // curveGraph.addPoint(new BABYLON.Vector3(300,50, 0));
     // curveGraph.addPoint(new BABYLON.Vector3(300,100, 0));
-    editor = new CurveEditor("editor", scene);
+    editor = new NameEditor("editor", scene);
     scene.onPointerDown = function (evt, pickResult) {
         editor.onPointerDown(evt, pickResult);
     };
@@ -887,10 +1217,10 @@ var saveJson = function () {
 };
 var loadJson = function () {
     var textarea = document.getElementById("json_save");
-    editor.loadJsonData(textarea.value);
+    editor.loadComplexVectorData(JSON.parse(textarea.value));
 };
 var loadName = function () {
-    editor.loadVectorData(ilyinName);
+    editor.loadComplexVectorData(complexIlyinName);
 };
 var huyButton = document.getElementById("huy");
 huyButton.onclick = changeColorButtonClick;

@@ -10,7 +10,7 @@ var engine = new BABYLON.Engine(canvas, true);
 //потом занести это создание прямо в плоскость, в которой рисуют
 
 
-var editor: CurveEditor;
+var editor: NameEditor;
 
 var createScene = function(){
     
@@ -26,7 +26,7 @@ var createScene = function(){
     // curveGraph.addPoint(new BABYLON.Vector3(300,50, 0));
     // curveGraph.addPoint(new BABYLON.Vector3(300,100, 0));
 
-    editor = new CurveEditor("editor", scene);
+    editor = new NameEditor("editor", scene);
 scene.onPointerDown = function (evt, pickResult) {
         editor.onPointerDown(evt, pickResult);
     };
@@ -74,11 +74,11 @@ let saveJson: () => any = function(): any{
 
 let loadJson: () => any = function(): any{
     let textarea = <HTMLTextAreaElement>document.getElementById("json_save");
-    editor.loadJsonData(textarea.value);
+    editor.loadComplexVectorData(JSON.parse(textarea.value));
 }
 
 let loadName: () => any = function(): any{
-    editor.loadVectorData(ilyinName);
+    editor.loadComplexVectorData(complexIlyinName);
 }
 
 var huyButton = <HTMLButtonElement>document.getElementById("huy");

@@ -82,3 +82,39 @@ class CurveEditor{
         this.curvePlane.loadVectorData(vectorData);
     }
 }
+
+class NameEditor{
+    protected curvePlane: ComplexCurvePlane;
+    private name: string;
+    private scene: BABYLON.Scene;
+    constructor(name:string, scene: BABYLON.Scene){
+        this.scene = scene;
+        this.name = name;
+        this.curvePlane = new ComplexCurvePlane("plane", 0, 0, scene);
+    }
+    public onPointerDown(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
+        this.curvePlane.onPointerDown(evt, pickingInfo);
+    }
+    public onPointerUp(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
+        this.curvePlane.onPointerUp(evt, pickingInfo);
+    }
+    public onPointerMove(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void{
+        this.curvePlane.onPointerMove(evt, pickingInfo);
+    }
+
+    public saveJsonData(): string{
+        return this.curvePlane.saveJsonData();
+    }
+
+    public loadJsonData(json: string): void{
+        this.curvePlane.loadJsonData(json);
+    }
+
+    public loadVectorData(vectorData: Vector[]): void{
+        this.curvePlane.loadVectorData(vectorData);
+    }
+
+    public loadComplexVectorData(complexVectorData: Vector[][]): void{
+        this.curvePlane.loadComplexVectorData(complexVectorData);
+    }
+}
