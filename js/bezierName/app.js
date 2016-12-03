@@ -1161,11 +1161,11 @@ var complexIlyinName = [[
             "z": 0
         }
     ]];
-/// <reference path="./actor.ts"/>
-/// <reference path="./graph.ts"/>
-/// <reference path="./drawingPlane.ts"/>
-/// <reference path="./editor.ts"/>
-/// <reference path="./ilyin.ts"/>
+/// <reference path="../common/actor.ts"/>
+/// <reference path="../common/graph.ts"/>
+/// <reference path="../common/drawingPlane.ts"/>
+/// <reference path="../common/editor.ts"/>
+/// <reference path="../common/ilyin.ts"/>
 var canvas = (document.getElementById("renderCanvas"));
 var engine = new BABYLON.Engine(canvas, true);
 //потом занести это создание прямо в плоскость, в которой рисуют

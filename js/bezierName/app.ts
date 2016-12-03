@@ -1,8 +1,8 @@
-/// <reference path="./actor.ts"/>
-/// <reference path="./graph.ts"/>
-/// <reference path="./drawingPlane.ts"/>
-/// <reference path="./editor.ts"/>
-/// <reference path="./ilyin.ts"/>
+/// <reference path="../common/actor.ts"/>
+/// <reference path="../common/graph.ts"/>
+/// <reference path="../common/drawingPlane.ts"/>
+/// <reference path="../common/editor.ts"/>
+/// <reference path="../common/ilyin.ts"/>
 var canvas: HTMLCanvasElement = <HTMLCanvasElement>(document.getElementById("renderCanvas"));
 
 var engine = new BABYLON.Engine(canvas, true);
