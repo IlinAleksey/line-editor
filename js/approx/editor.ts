@@ -204,6 +204,7 @@ class ApproximateCurveGraph extends BaseCurveGraph {
         for(var i = 0; i <= 1; i += step) {
 	    bez.push( this.vectorAtT(vertices, i));
 	  }
+      bez.push(vertices[vertices.length - 1]);
       return bez;
     }
     protected initCurves(): void{
