@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "outFile": "./app.js"
+  } ,
+  "files": [
+      "../common/actor.ts",
+      "../common/drawingPlane.ts",
+      "../common/editor.ts",
+      "../common/graph.ts",
+      "../common/ilyin.ts",
+      "./app.ts",
+      "./editor.ts",
+      "../babylon/babylon.2.4.d.ts"
+    ]
+}
