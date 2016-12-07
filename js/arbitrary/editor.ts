@@ -7,7 +7,6 @@ class ArbitraryCurveGraph extends BaseCurveGraph{
         let binom = 1;
         for (let x = n-i+1; x <= n; x++) binom *= x;
         for (let x = 1; x <= i; x++) binom /= x;
-        //console.log(binom, Math.pow(t, i), Math.pow(1-t, n-i), "n", n, i ,t);
         return binom * Math.pow(t, i) * Math.pow(1-t, n-i);
     }
     private vectorAtT(vertices: BABYLON.Vector3[], t:number) : BABYLON.Vector3{
@@ -15,7 +14,6 @@ class ArbitraryCurveGraph extends BaseCurveGraph{
         let res = new BABYLON.Vector3(0,0,0);
         for(var i = 0; i <= n-1; i += 1) {
             let b = this.bernstein(n-1,i,t);
-            //console.log("b", b, "vertex", vertices[i]);
             let next = vertices[i].multiplyByFloats(b,b,b );
             res.addInPlace(next);
         }

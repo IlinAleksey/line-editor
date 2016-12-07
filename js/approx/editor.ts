@@ -29,13 +29,9 @@ class Approximator {
     public ApproximateAndDrawBezier(points: BABYLON.Vector3[]): BABYLON.Vector3[] {
         this.points = points;
         this.CalculateLength();
-        console.log("CalculateLength", this);
         this.CalculateBArr();
-console.log("CalculateBArr", this);
         this.CalculateParameters();
-console.log("CalculateParameters", this);
         this.CalculateXandY();
-        console.log("CalculateXandY", this);
         let bez = [points[0], new BABYLON.Vector3(this.x1, this.y1, 0), new BABYLON.Vector3(this.x2, this.y2, 0), points[points.length - 1]];
         return bez;
     }
@@ -134,9 +130,7 @@ console.log("CalculateParameters", this);
         for (let i = 0; i < 4; i++) {
             this.b_arr[i] = [];
             for (let j = 0; j < this.points.length; j++) {
-                console.log(i, this.length[j] , this.lengthSumm);
                 let num = this.B(i, this.length[j] / this.lengthSumm);
-                console.log(num);
                 this.b_arr[i][j] = this.B(i, this.length[j] / this.lengthSumm);
                 
             }
@@ -183,7 +177,6 @@ class ApproximateCurveGraph extends BaseCurveGraph {
         let binom = 1;
         for (let x = n-i+1; x <= n; x++) binom *= x;
         for (let x = 1; x <= i; x++) binom /= x;
-        //console.log(binom, Math.pow(t, i), Math.pow(1-t, n-i), "n", n, i ,t);
         return binom * Math.pow(t, i) * Math.pow(1-t, n-i);
     }
     private vectorAtT(vertices: BABYLON.Vector3[], t:number) : BABYLON.Vector3{
@@ -191,7 +184,6 @@ class ApproximateCurveGraph extends BaseCurveGraph {
         let res = new BABYLON.Vector3(0,0,0);
         for(var i = 0; i <= n-1; i += 1) {
             let b = this.bernstein(n-1,i,t);
-            //console.log("b", b, "vertex", vertices[i]);
             let next = vertices[i].multiplyByFloats(b,b,b );
             res.addInPlace(next);
         }
@@ -220,7 +212,6 @@ class ApproximateCurveGraph extends BaseCurveGraph {
             return;
         }
         let actualPoints = this.approximator.ApproximateAndDrawBezier(this.points);
-        console.log(actualPoints);
         let curvePoints = this.arbitraryBezier(actualPoints, 50);
         this.curves[0] = BABYLON.Mesh.CreateLines("name", curvePoints, this.scene, true, this.curves[0]);
         

@@ -45,9 +45,11 @@ abstract class BaseInteractiveGraphPlane implements DrawingPlane {
 
 class SimpleInteractiveGraphPlane extends BaseInteractiveGraphPlane {
     protected plane: BABYLON.Mesh;
+    protected scene: BABYLON.Scene;
     public graph: InteractiveGraph;
     constructor(name: string, width: number, height: number, scene: BABYLON.Scene, graph?: InteractiveGraph) {
         super();
+        this.scene = scene;
         this.plane = BABYLON.Mesh.CreateGround(name, width, height, 2, scene);
         this.plane.translate(new BABYLON.Vector3(1, 0, 0), 0);
         this.plane.rotate(new BABYLON.Vector3(1, 0, 0), -Math.PI / 2);
@@ -58,8 +60,7 @@ class SimpleInteractiveGraphPlane extends BaseInteractiveGraphPlane {
     }
 
     public onPointerDown(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void {
-        //console.log("onPointerDown", evt);
-        console.log("onPointerDown", pickingInfo.pickedMesh.name, pickingInfo);
+
         if (pickingInfo.hit) {
             if (pickingInfo.pickedMesh == this.plane && evt.button == 0) {
 
@@ -88,7 +89,6 @@ class SimpleCurvePlane extends SimpleInteractiveGraphPlane {
                 }
 
                 if (newPosition) {
-                    console.log("onPointerMove", newPosition, this.currentPointIndex);
                     this.graph.updateGraphPoint(this.currentPointIndex, newPosition);
                 }
 
@@ -104,10 +104,8 @@ class SimpleCurvePlane extends SimpleInteractiveGraphPlane {
         if (pickinfo.hit) {
 
             let indexMesh = pickingInfo.pickedMesh as any;
-            console.log((<any>pickinfo.pickedMesh).index);
             this.currentPointIndex = (<any>pickinfo.pickedMesh).index;
             this.rmbPressed = true;
-            console.log("onPointerDown", this.currentPointIndex);
 
         }
         else {
@@ -151,20 +149,20 @@ class ComplexCurvePlane extends SimpleInteractiveGraphPlane {
     }
     public onPointerMove(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void {
         if (this.lmbPressed) {
-                let newPosition: BABYLON.Vector3 = null;
-                var pickinfo = scene.pick(scene.pointerX, scene.pointerY, (mesh) => { return mesh.name == this.plane.name; });
-                if (pickinfo.hit) {
-                    newPosition = pickinfo.pickedPoint;
-                }
-
-                if (newPosition) {
-                    if (this.curveArray[this.currentCurveIndex]){
-                        this.curveArray[this.currentCurveIndex].updateGraphPoint(this.currentPointIndex, newPosition);
-                    }
-                }
-
+            let newPosition: BABYLON.Vector3 = null;
+            var pickinfo = scene.pick(scene.pointerX, scene.pointerY, (mesh) => { return mesh.name == this.plane.name; });
+            if (pickinfo.hit) {
+                newPosition = pickinfo.pickedPoint;
             }
-        
+
+            if (newPosition) {
+                if (this.curveArray[this.currentCurveIndex]) {
+                    this.curveArray[this.currentCurveIndex].updateGraphPoint(this.currentPointIndex, newPosition);
+                }
+            }
+
+        }
+
     }
     public onPointerUp(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void {
         this.lmbPressed = false;
@@ -173,12 +171,9 @@ class ComplexCurvePlane extends SimpleInteractiveGraphPlane {
         //super.onPointerDown(evt, pickingInfo);
         var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh.name == "disc"; });
         if (pickinfo.hit) {
-
-            console.log((<any>pickinfo.pickedMesh).index);
             this.currentPointIndex = (<any>pickinfo.pickedMesh).index;
             this.currentCurveIndex = (<any>pickinfo.pickedMesh).curveIndex;
             this.lmbPressed = true;
-            console.log("onPointerDown", this.currentPointIndex);
 
         }
         else {
@@ -202,8 +197,8 @@ class ComplexCurvePlane extends SimpleInteractiveGraphPlane {
     public loadVectorData(vectorData: Vector[]): void {
         this.graph.loadVectorData(vectorData);
     }
-    public loadComplexVectorData(complexVectorData: Vector[][]): void{
-        for (let index = 0; index < complexVectorData.length; index++){
+    public loadComplexVectorData(complexVectorData: Vector[][]): void {
+        for (let index = 0; index < complexVectorData.length; index++) {
             this.curveArray[index] = new SimpleCurveGraph(name, [], scene, index);
             this.curveArray[index].loadVectorData(complexVectorData[index]);
         }
@@ -237,7 +232,6 @@ class SimpleMovablePlane extends SimpleInteractiveGraphPlane implements MovableE
         for (var point of points) {
             points2D.push(new BABYLON.Vector2(point.x, point.y));
         }
-        console.log("before" + points2D);
         return new LinAlgMovable(name, points2D, scene);
     }
 }

@@ -34,10 +34,7 @@ private finishedEditingPath: boolean;
             {
                 points2D.push(new BABYLON.Vector2(point.x, point.y));
             }
-            console.log("before" + points2D);
             let movable = new LinAlgMovable("movable222",points2D, this.scene);
-            console.log("after");
-            console.log(movable);
             this.simplePath.startMoving(movable);
             
         }

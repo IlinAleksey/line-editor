@@ -25,7 +25,6 @@ var BaseLineMovable = (function (_super) {
         _super.call(this);
         this.scene = scene;
         this.fuck = [];
-        console.log(this);
         for (var _i = 0, points2d_1 = points2d; _i < points2d_1.length; _i++) {
             var p = points2d_1[_i];
             this.fuck.push(new BABYLON.Vector3(p.x, p.y, 0));
@@ -72,7 +71,6 @@ var LinAlgMovable = (function (_super) {
     __extends(LinAlgMovable, _super);
     function LinAlgMovable(name, points2d, scene) {
         _super.call(this, name, points2d, scene);
-        //console.log(this);
         this.linearSpeed = 0.1;
         this.angularSpeed = 0.1;
     }
@@ -80,7 +78,6 @@ var LinAlgMovable = (function (_super) {
         return new BABYLON.Vector3(vector.x * Math.cos(angle) - vector.y * Math.sin(angle), vector.y * Math.cos(angle) + vector.x * Math.sin(angle), 0);
     };
     LinAlgMovable.prototype.rotateAroundOrigin = function (vector, pivot, angle) {
-        console.log("rotateAroundOrigin " + vector + pivot + angle);
         var translated = vector.subtract(pivot);
         var rotated = this.rotateVectorAroundOrigin(translated, angle);
         var translatedBack = rotated.add(pivot);
@@ -102,8 +99,6 @@ var LinAlgMovable = (function (_super) {
             var position = _a[_i];
             sum = sum.add(position);
         }
-        //console.log("average");
-        //console.log(this.fuck.toString());
         var average = sum.divide(new BABYLON.Vector3(this.fuck.length, this.fuck.length, 1));
         return average;
     };
@@ -118,12 +113,9 @@ var LinAlgMovable = (function (_super) {
         this.addTranslation(diff);
     };
     LinAlgMovable.prototype.addTranslation = function (position) {
-        //console.log("addTranslation position: " + position.toString());
         for (var index in this.fuck) {
             this.fuck[index].addInPlace(position);
         }
-        //console.log("addTranslation");
-        //console.log(this.fuck.toString());
         this.lineMesh = BABYLON.Mesh.CreateLines(name, this.fuck, scene, true, this.lineMesh);
     };
     LinAlgMovable.prototype.setZRotation = function (angle) {
@@ -132,15 +124,12 @@ var LinAlgMovable = (function (_super) {
         this.addZRotation(diff);
     };
     LinAlgMovable.prototype.addZRotation = function (angle) {
-        //console.log("angle " + angle);
         var radians = this.toRadians(angle);
         this.addAngleToRotation(radians);
         var pivot = this.getAverage();
         for (var index in this.fuck) {
             this.fuck[index] = this.rotateAroundOrigin(this.fuck[index], pivot, radians);
         }
-        //console.log("addZRotation");
-        //console.log(this.fuck.toString());
         this.lineMesh = BABYLON.Mesh.CreateLines(name, this.fuck, scene, true, this.lineMesh);
     };
     LinAlgMovable.prototype.getZRotation = function () {
@@ -230,7 +219,6 @@ var BaseCurveGraph = (function () {
             return;
         }
         var cubicGroupCount = Math.floor((pointsCount + 1) / 4);
-        console.log("cubicGroupCount", cubicGroupCount);
         for (var index = 0; index < cubicGroupCount; index++) {
             var curIndex = index;
             var curvePoints = this.cubicBezier(this.points[index * 3 + 0], this.points[index * 3 + 1], this.points[index * 3 + 2], this.points[index * 3 + 3], 50);
@@ -242,7 +230,6 @@ var BaseCurveGraph = (function () {
             //         curvePoints.push(this.points[curIndex]);
             //     }
             // }
-            console.log(curvePoints);
             this.curves[index / 4] = BABYLON.Mesh.CreateLines("name", curvePoints, this.scene, true);
         }
     };
@@ -258,7 +245,6 @@ var BaseCurveGraph = (function () {
         material.emissiveColor = this.discColor;
         disc.material = material;
         this.discs.push(disc);
-        console.log("BaseCurveGraph::addPoint ", this.discs.length);
         this.discs[this.discs.length - 1].index = this.discs.length - 1;
         this.discs[this.discs.length - 1].curveIndex = this.graphIndex;
         this.pointAddedUpdateSpline();
@@ -313,7 +299,6 @@ var BaseCurveGraph = (function () {
     BaseCurveGraph.prototype.save = function () { return JSON.stringify(this.points); };
     BaseCurveGraph.prototype.load = function (json) {
         var tempAny = JSON.parse(json);
-        console.log(tempAny);
         this.clear();
         for (var _i = 0, tempAny_1 = tempAny; _i < tempAny_1.length; _i++) {
             var point = tempAny_1[_i];
@@ -390,7 +375,6 @@ var SimplePath = (function (_super) {
             }
             else {
                 var movableToNextUnit = movableToNext.normalize();
-                //console.log("movableToNextUnit " + movableToNextUnit.toString());
                 this.movable.move(movableToNextUnit, deltaTime);
                 this.movable.turn(deltaTime);
             }
@@ -426,6 +410,7 @@ var SimpleInteractiveGraphPlane = (function (_super) {
     __extends(SimpleInteractiveGraphPlane, _super);
     function SimpleInteractiveGraphPlane(name, width, height, scene, graph) {
         _super.call(this);
+        this.scene = scene;
         this.plane = BABYLON.Mesh.CreateGround(name, width, height, 2, scene);
         this.plane.translate(new BABYLON.Vector3(1, 0, 0), 0);
         this.plane.rotate(new BABYLON.Vector3(1, 0, 0), -Math.PI / 2);
@@ -434,8 +419,6 @@ var SimpleInteractiveGraphPlane = (function (_super) {
         }
     }
     SimpleInteractiveGraphPlane.prototype.onPointerDown = function (evt, pickingInfo) {
-        //console.log("onPointerDown", evt);
-        console.log("onPointerDown", pickingInfo.pickedMesh.name, pickingInfo);
         if (pickingInfo.hit) {
             if (pickingInfo.pickedMesh == this.plane && evt.button == 0) {
                 this.addPoint(pickingInfo.pickedPoint);
@@ -461,7 +444,6 @@ var SimpleCurvePlane = (function (_super) {
                     newPosition = pickinfo.pickedPoint;
                 }
                 if (newPosition) {
-                    console.log("onPointerMove", newPosition, this.currentPointIndex);
                     this.graph.updateGraphPoint(this.currentPointIndex, newPosition);
                 }
             }
@@ -475,10 +457,8 @@ var SimpleCurvePlane = (function (_super) {
         var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh.name == "disc"; });
         if (pickinfo.hit) {
             var indexMesh = pickingInfo.pickedMesh;
-            console.log(pickinfo.pickedMesh.index);
             this.currentPointIndex = pickinfo.pickedMesh.index;
             this.rmbPressed = true;
-            console.log("onPointerDown", this.currentPointIndex);
         }
         else {
             var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh !== this.plane; });
@@ -534,11 +514,9 @@ var ComplexCurvePlane = (function (_super) {
         //super.onPointerDown(evt, pickingInfo);
         var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh.name == "disc"; });
         if (pickinfo.hit) {
-            console.log(pickinfo.pickedMesh.index);
             this.currentPointIndex = pickinfo.pickedMesh.index;
             this.currentCurveIndex = pickinfo.pickedMesh.curveIndex;
             this.lmbPressed = true;
-            console.log("onPointerDown", this.currentPointIndex);
         }
         else {
             var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh !== this.plane; });
@@ -593,7 +571,6 @@ var SimpleMovablePlane = (function (_super) {
             var point = points_3[_i];
             points2D.push(new BABYLON.Vector2(point.x, point.y));
         }
-        console.log("before" + points2D);
         return new LinAlgMovable(name, points2D, scene);
     };
     return SimpleMovablePlane;
@@ -624,10 +601,7 @@ var LineEditor = (function () {
                 var point = points_4[_i];
                 points2D.push(new BABYLON.Vector2(point.x, point.y));
             }
-            console.log("before" + points2D);
             var movable = new LinAlgMovable("movable222", points2D, this.scene);
-            console.log("after");
-            console.log(movable);
             this.simplePath.startMoving(movable);
         }
     };

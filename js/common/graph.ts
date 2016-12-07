@@ -84,7 +84,6 @@ abstract class BaseCurveGraph implements InteractiveGraph{
             return;
         }
         let cubicGroupCount = Math.floor((pointsCount + 1) / 4);
-        console.log("cubicGroupCount", cubicGroupCount);
         for (let index = 0; index < cubicGroupCount; index++) {
             let curIndex: number = index;
             let curvePoints = this.cubicBezier(this.points[index * 3 + 0], this.points[index * 3 + 1],this.points[index * 3 + 2],this.points[index * 3 + 3], 50);
@@ -96,7 +95,6 @@ abstract class BaseCurveGraph implements InteractiveGraph{
             //         curvePoints.push(this.points[curIndex]);
             //     }
             // }
-            console.log(curvePoints);
             
             this.curves[index/4] =  BABYLON.Mesh.CreateLines("name", curvePoints, this.scene, true);
         }
@@ -137,7 +135,6 @@ abstract class BaseCurveGraph implements InteractiveGraph{
             material.emissiveColor = this.discColor;
             disc.material = material;
             this.discs.push(disc);
-            console.log("BaseCurveGraph::addPoint ", this.discs.length);
             this.discs[this.discs.length - 1].index = this.discs.length - 1;
             this.discs[this.discs.length - 1].curveIndex = this.graphIndex;
 
@@ -217,7 +214,6 @@ abstract class BaseCurveGraph implements InteractiveGraph{
     public load(json: string): void {
         let tempAny: any[] = JSON.parse(json);
 
-        console.log(tempAny);
         this.clear();
         for (let point of tempAny){
             let tempPoint = new BABYLON.Vector3(0,0,0);
@@ -295,7 +291,6 @@ class SimplePath extends BaseLineGraph{
             }
             else{
                 let movableToNextUnit = movableToNext.normalize();
-                //console.log("movableToNextUnit " + movableToNextUnit.toString());
                 this.movable.move(movableToNextUnit, deltaTime);
                 this.movable.turn(deltaTime);
             }

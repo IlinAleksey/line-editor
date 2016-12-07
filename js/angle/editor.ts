@@ -1,6 +1,8 @@
 /// <reference path="../common/graph.ts"/>
 /// <reference path="../common/drawingPlane.ts"/>
 /// <reference path="../common/editor.ts"/>
+/// <reference path="../common/ilyin.ts"/>
+/// <reference path="../babylon/babylon.2.4.d.ts"/>
 
 class PolygonGraph extends BaseCurveGraph {
     protected closed: boolean;
@@ -47,7 +49,7 @@ class PolygonGraph extends BaseCurveGraph {
             }
         }
         let newPoints: BABYLON.Vector3[] = [];
-        console.log(this.points);
+
         if (clockwise){
             for (let i =0; i< this.points.length - 1; i++){
                 newPoints.push(this.points[i]);
@@ -123,7 +125,7 @@ class PolygonPlane extends SimpleCurvePlane {
     public onPointerMove(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void {
         if (this.lmbPressed) {
             let newPosition: BABYLON.Vector3 = null;
-            var pickinfo = scene.pick(scene.pointerX, scene.pointerY, (mesh) => { return mesh.name == this.plane.name; });
+            var pickinfo = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (mesh) => { return mesh.name == this.plane.name; });
             if (pickinfo.hit) {
                 newPosition = pickinfo.pickedPoint;
             }
@@ -145,18 +147,17 @@ class PolygonPlane extends SimpleCurvePlane {
     }
     public onPointerDown(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void {
         //super.onPointerDown(evt, pickingInfo);
-        var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh.name == "disc"; });
+        var pickinfo = this.scene.pick(this.scene.pointerX, this.scene.pointerY, function (mesh) { return mesh.name == "disc"; });
         if (pickinfo.hit) {
 
-            console.log((<any>pickinfo.pickedMesh).index);
+
             this.currentPointIndex = (<any>pickinfo.pickedMesh).index;
             this.currentCurveIndex = (<any>pickinfo.pickedMesh).curveIndex;
             this.lmbPressed = true;
-            console.log("onPointerDown", this.currentPointIndex);
 
         }
         else {
-            var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh !== this.plane; });
+            var pickinfo = this.scene.pick(this.scene.pointerX, this.scene.pointerY, function (mesh) { return mesh !== this.plane; });
             if (pickinfo.hit) {
                 if (this.drawingPolygon) {
                     this.graph.addPoint(pickingInfo.pickedPoint);
@@ -186,7 +187,6 @@ class PolygonPlane extends SimpleCurvePlane {
         let r = n - 1;
         while (r - p > 1){
             let q = Math.floor((p + r) / 2);
-            console.log(this.cross(P[0], P[q], A), q, P[q], A)
             if (this.cross(P[0], P[q], A) < 0){
                 r = q;
             }
@@ -207,7 +207,6 @@ class PolygonPlane extends SimpleCurvePlane {
             return false;
         }
         let res = this.pointloc(polygonPoints, testPoint);
-        console.log(polygonPoints, testPoint, res);
         return res;
     }
 }
