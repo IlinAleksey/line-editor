@@ -146,6 +146,7 @@ class ComplexCurvePlane extends SimpleInteractiveGraphPlane {
         super(name, 1300, 600, scene, graph);
         this.curveArray = new Array<SimpleCurveGraph>();
         this.lmbPressed = false;
+        this.currentCurveIndex = 0;
     }
     public onPointerMove(evt: PointerEvent, pickingInfo: BABYLON.PickingInfo): void {
         if (this.lmbPressed) {
@@ -179,8 +180,7 @@ class ComplexCurvePlane extends SimpleInteractiveGraphPlane {
         else {
             var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh !== this.plane; });
             if (pickinfo.hit) {
-
-                this.addPoint(pickingInfo.pickedPoint);
+                this.curveArray[this.currentCurveIndex].addPoint(pickingInfo.pickedPoint);
 
             }
         }

@@ -491,6 +491,7 @@ var ComplexCurvePlane = (function (_super) {
         _super.call(this, name, 1300, 600, scene, graph);
         this.curveArray = new Array();
         this.lmbPressed = false;
+        this.currentCurveIndex = 0;
     }
     ComplexCurvePlane.prototype.onPointerMove = function (evt, pickingInfo) {
         var _this = this;
@@ -521,7 +522,7 @@ var ComplexCurvePlane = (function (_super) {
         else {
             var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh !== this.plane; });
             if (pickinfo.hit) {
-                this.addPoint(pickingInfo.pickedPoint);
+                this.curveArray[this.currentCurveIndex].addPoint(pickingInfo.pickedPoint);
             }
         }
     };
