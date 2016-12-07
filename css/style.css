@@ -27,3 +27,10 @@ html, body {
     background-color: #FFFFFF;
     z-index: 1;
   }
+
+p.rightResult{
+  color: green;
+}
+p.wrongResult{
+  color: red;
+}

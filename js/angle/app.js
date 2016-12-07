@@ -1165,11 +1165,245 @@ var complexIlyinName = [[
             "z": 0
         }
     ]];
+/// <reference path="../common/graph.ts"/>
+/// <reference path="../common/drawingPlane.ts"/>
+/// <reference path="../common/editor.ts"/>
+var PolygonGraph = (function (_super) {
+    __extends(PolygonGraph, _super);
+    function PolygonGraph(name, points, scene, graphIndex) {
+        if (graphIndex === void 0) { graphIndex = 0; }
+        _super.call(this, name, points, scene, graphIndex);
+        this.closed = false;
+    }
+    PolygonGraph.prototype.initCurves = function () {
+        if (this.points.length < 3) {
+            return;
+        }
+        this.curves[0] = BABYLON.Mesh.CreateLines("name", this.points, this.scene, true);
+    };
+    PolygonGraph.prototype.pointAddedUpdateSpline = function () {
+        if (this.points.length < 3) {
+            return;
+        }
+        if (this.curves[0]) {
+            this.curves[0].dispose();
+        }
+        this.curves[0] = BABYLON.Mesh.CreateLines("name", this.points, this.scene, true);
+    };
+    PolygonGraph.prototype.updateSpline = function (pointIndex) {
+        if (this.points.length < 3) {
+            return;
+        }
+        this.curves[0] = BABYLON.Mesh.CreateLines("name", this.points, this.scene, true, this.curves[0]);
+    };
+    PolygonGraph.prototype.cross = function (A, B, C) {
+        return (B.x - A.x) * (C.y - B.y) - (B.y - A.y) * (C.x - B.x);
+    };
+    PolygonGraph.prototype.getVertices = function () {
+        var A = this.points[0];
+        var B = this.points[1];
+        var clockwise = false;
+        for (var i = 2; i < this.points.length - 1; i++) {
+            var C = this.points[i];
+            var z = this.cross(A, B, C);
+            if (z != 0) {
+                clockwise = z > 0;
+                break;
+            }
+        }
+        var newPoints = [];
+        console.log(this.points);
+        if (clockwise) {
+            for (var i = 0; i < this.points.length - 1; i++) {
+                newPoints.push(this.points[i]);
+            }
+        }
+        else {
+            for (var i = this.points.length - 2; i >= 0; i--) {
+                newPoints.push(this.points[i]);
+            }
+        }
+        return newPoints;
+    };
+    PolygonGraph.prototype.updateGraphPoint = function (pointIndex, newPosition) {
+        if (pointIndex == 0 && this.closed) {
+            this.points[pointIndex] = newPosition;
+            this.points[this.points.length - 1] = newPosition;
+        }
+        else {
+            this.points[pointIndex] = newPosition;
+        }
+        this.discs[pointIndex].position = newPosition, 1;
+        this.updateSpline(pointIndex);
+    };
+    PolygonGraph.prototype.closeGraph = function () {
+        if (this.points.length >= 3) {
+            this.closed = true;
+            var point = this.points[0];
+            this.points.push(point);
+            this.curves[0].dispose();
+            this.curves[0] = BABYLON.Mesh.CreateLines("name", this.points, this.scene, true);
+        }
+    };
+    return PolygonGraph;
+}(BaseCurveGraph));
+var SinglePointGraph = (function (_super) {
+    __extends(SinglePointGraph, _super);
+    function SinglePointGraph(name, points, scene, graphIndex) {
+        if (graphIndex === void 0) { graphIndex = 0; }
+        _super.call(this, name, points, scene, graphIndex, BABYLON.Color3.Green());
+    }
+    SinglePointGraph.prototype.initCurves = function () {
+        if (this.points.length > 1) {
+            return;
+        }
+        this.curves[0] = BABYLON.Mesh.CreateLines("name", this.points, this.scene, true);
+    };
+    SinglePointGraph.prototype.pointAddedUpdateSpline = function () {
+        if (this.points.length > 1) {
+            return;
+        }
+        this.curves[0] = BABYLON.Mesh.CreateLines("name", this.points, this.scene, true);
+    };
+    SinglePointGraph.prototype.getVertices = function () {
+        return this.points;
+    };
+    return SinglePointGraph;
+}(BaseCurveGraph));
+var PolygonPlane = (function (_super) {
+    __extends(PolygonPlane, _super);
+    function PolygonPlane(name, width, height, scene, graph) {
+        _super.call(this, name, 1300, 600, scene, graph);
+        this.graph = new PolygonGraph("Polygon", [], scene, 0);
+        this.drawingPolygon = true;
+        this.singlePointGraph = new SinglePointGraph("Single Point", [], scene, 1);
+        this.lmbPressed = false;
+    }
+    PolygonPlane.prototype.finishDrawing = function () {
+        this.drawingPolygon = false;
+        this.graph.closeGraph();
+    };
+    PolygonPlane.prototype.onPointerMove = function (evt, pickingInfo) {
+        var _this = this;
+        if (this.lmbPressed) {
+            var newPosition = null;
+            var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh.name == _this.plane.name; });
+            if (pickinfo.hit) {
+                newPosition = pickinfo.pickedPoint;
+            }
+            if (newPosition) {
+                if (this.currentCurveIndex == 0) {
+                    this.graph.updateGraphPoint(this.currentPointIndex, newPosition);
+                }
+                else {
+                    this.singlePointGraph.updateGraphPoint(this.currentPointIndex, newPosition);
+                }
+            }
+        }
+    };
+    PolygonPlane.prototype.onPointerUp = function (evt, pickingInfo) {
+        this.lmbPressed = false;
+    };
+    PolygonPlane.prototype.onPointerDown = function (evt, pickingInfo) {
+        //super.onPointerDown(evt, pickingInfo);
+        var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh.name == "disc"; });
+        if (pickinfo.hit) {
+            console.log(pickinfo.pickedMesh.index);
+            this.currentPointIndex = pickinfo.pickedMesh.index;
+            this.currentCurveIndex = pickinfo.pickedMesh.curveIndex;
+            this.lmbPressed = true;
+            console.log("onPointerDown", this.currentPointIndex);
+        }
+        else {
+            var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh !== this.plane; });
+            if (pickinfo.hit) {
+                if (this.drawingPolygon) {
+                    this.graph.addPoint(pickingInfo.pickedPoint);
+                }
+                else {
+                    this.singlePointGraph.addPoint(pickingInfo.pickedPoint);
+                }
+            }
+        }
+    };
+    PolygonPlane.prototype.cross = function (A, B, C) {
+        return (B.x - A.x) * (C.y - B.y) - (B.y - A.y) * (C.x - B.x);
+    };
+    PolygonPlane.prototype.intersect = function (A, B, C, D) {
+        return this.cross(A, B, C) * this.cross(A, B, D) <= 0 && this.cross(C, D, A) * this.cross(C, D, B) < 0;
+    };
+    PolygonPlane.prototype.pointloc = function (P, A) {
+        var n = P.length;
+        if (this.cross(P[0], P[1], A) < 0 || this.cross(P[0], P[n - 1], A) > 0) {
+            return false;
+        }
+        var p = 1;
+        var r = n - 1;
+        while (r - p > 1) {
+            var q = Math.floor((p + r) / 2);
+            console.log(this.cross(P[0], P[q], A), q, P[q], A);
+            if (this.cross(P[0], P[q], A) < 0) {
+                r = q;
+            }
+            else {
+                p = q;
+            }
+        }
+        return !(this.intersect(P[0], A, P[p], P[r]));
+    };
+    PolygonPlane.prototype.isPointInsidePolygon = function () {
+        var polygonPoints = this.graph.getVertices();
+        var testPoint = this.singlePointGraph.getVertices()[0];
+        if (polygonPoints == undefined) {
+            return false;
+        }
+        if (testPoint == undefined) {
+            return false;
+        }
+        var res = this.pointloc(polygonPoints, testPoint);
+        console.log(polygonPoints, testPoint, res);
+        return res;
+    };
+    return PolygonPlane;
+}(SimpleCurvePlane));
+var PolygonEditor = (function () {
+    function PolygonEditor(name, scene) {
+        this.scene = scene;
+        this.name = name;
+        this.curvePlane = new PolygonPlane("plane", 0, 0, scene);
+    }
+    PolygonEditor.prototype.onPointerDown = function (evt, pickingInfo) {
+        this.curvePlane.onPointerDown(evt, pickingInfo);
+    };
+    PolygonEditor.prototype.onPointerUp = function (evt, pickingInfo) {
+        this.curvePlane.onPointerUp(evt, pickingInfo);
+    };
+    PolygonEditor.prototype.onPointerMove = function (evt, pickingInfo) {
+        this.curvePlane.onPointerMove(evt, pickingInfo);
+    };
+    PolygonEditor.prototype.saveJsonData = function () {
+        return this.curvePlane.saveJsonData();
+    };
+    PolygonEditor.prototype.loadJsonData = function (json) {
+        this.curvePlane.loadJsonData(json);
+    };
+    PolygonEditor.prototype.loadVectorData = function (vectorData) {
+        this.curvePlane.loadVectorData(vectorData);
+    };
+    PolygonEditor.prototype.closeGraph = function () {
+        this.curvePlane.finishDrawing();
+    };
+    PolygonEditor.prototype.isPointInsidePolygon = function () {
+        return this.curvePlane.isPointInsidePolygon();
+    };
+    return PolygonEditor;
+}());
 /// <reference path="../common/actor.ts"/>
 /// <reference path="../common/graph.ts"/>
 /// <reference path="../common/drawingPlane.ts"/>
 /// <reference path="../common/editor.ts"/>
 /// <reference path="../common/ilyin.ts"/>
+/// <reference path="./editor.ts"/>
 var canvas = (document.getElementById("renderCanvas"));
 var engine = new BABYLON.Engine(canvas, true);
 //потом занести это создание прямо в плоскость, в которой рисуют
@@ -1185,7 +1419,7 @@ var createScene = function () {
     // curveGraph.addPoint(new BABYLON.Vector3(300,0, 0));
     // curveGraph.addPoint(new BABYLON.Vector3(300,50, 0));
     // curveGraph.addPoint(new BABYLON.Vector3(300,100, 0));
-    editor = new NameEditor("editor", scene);
+    editor = new PolygonEditor("editor", scene);
     scene.onPointerDown = function (evt, pickResult) {
         editor.onPointerDown(evt, pickResult);
     };
@@ -1210,21 +1444,17 @@ var changeColorButtonClick = function () {
     scene.clearColor = new BABYLON.Color3(1, 1, 0);
 };
 var closeGraph = function () {
-    //editor.finishEditingPath();
+    editor.closeGraph();
 };
 var finishGraph = function () {
-    //editor.finishEditingMovable();
-};
-var saveJson = function () {
-    var textarea = document.getElementById("json_save");
-    textarea.value = editor.saveJsonData();
-};
-var loadJson = function () {
-    var textarea = document.getElementById("json_save");
-    editor.loadComplexVectorData(JSON.parse(textarea.value));
-};
-var loadName = function () {
-    editor.loadComplexVectorData(complexIlyinName);
+    var res = editor.isPointInsidePolygon();
+    var resultDiv = document.getElementById("result");
+    if (res) {
+        resultDiv.innerHTML = "<p class=\"rightResult\">Inside</p>";
+    }
+    else {
+        resultDiv.innerHTML = "<p class=\"wrongResult\">Outside</p>";
+    }
 };
 var huyButton = document.getElementById("huy");
 huyButton.onclick = changeColorButtonClick;
@@ -1232,9 +1462,3 @@ var closeButton = document.getElementById("close");
 closeButton.onclick = closeGraph;
 var finishButton = document.getElementById("finish");
 finishButton.onclick = finishGraph;
-var saveButton = document.getElementById("save");
-saveButton.onclick = saveJson;
-var loadButton = document.getElementById("load");
-loadButton.onclick = loadJson;
-var nameButton = document.getElementById("name");
-nameButton.onclick = loadName;

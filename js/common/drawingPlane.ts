@@ -72,7 +72,7 @@ class SimpleInteractiveGraphPlane extends BaseInteractiveGraphPlane {
 
 class SimpleCurvePlane extends SimpleInteractiveGraphPlane {
     private rmbPressed: boolean;
-    private currentPointIndex: number;
+    protected currentPointIndex: number;
     constructor(name: string, width: number, height: number, scene: BABYLON.Scene, graph?: InteractiveGraph) {
         super(name, width, height, scene, graph);
         this.graph = new SimpleCurveGraph(name, [], scene);
@@ -158,7 +158,6 @@ class ComplexCurvePlane extends SimpleInteractiveGraphPlane {
                 }
 
                 if (newPosition) {
-                    console.log("onPointerMove", newPosition, this.currentPointIndex, this.currentCurveIndex);
                     if (this.curveArray[this.currentCurveIndex]){
                         this.curveArray[this.currentCurveIndex].updateGraphPoint(this.currentPointIndex, newPosition);
                     }

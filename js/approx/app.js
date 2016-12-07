@@ -188,12 +188,14 @@ var BaseLineGraph = (function () {
     return BaseLineGraph;
 }());
 var BaseCurveGraph = (function () {
-    function BaseCurveGraph(name, points, scene, graphIndex) {
+    function BaseCurveGraph(name, points, scene, graphIndex, discColor) {
         if (graphIndex === void 0) { graphIndex = 0; }
+        if (discColor === void 0) { discColor = BABYLON.Color3.Red(); }
         this.graphIndex = graphIndex;
         this.scene = scene;
         this.points = [];
         this.discs = [];
+        this.discColor = discColor;
         for (var _i = 0, points_2 = points; _i < points_2.length; _i++) {
             var p = points_2[_i];
             var point = new BABYLON.Vector3(p.x, p.y, 0);
@@ -244,19 +246,22 @@ var BaseCurveGraph = (function () {
             this.curves[index / 4] = BABYLON.Mesh.CreateLines("name", curvePoints, this.scene, true);
         }
     };
+    BaseCurveGraph.prototype.pointAddedUpdateSpline = function () {
+        this.updateSpline(this.discs.length - 1);
+    };
     BaseCurveGraph.prototype.addPoint = function (point) {
         this.points.push(point);
         var disc = BABYLON.Mesh.CreateDisc("disc", 20, 20, this.scene);
         // let elevatedPoint = BABYLON
         disc.translate(point, 1);
         var material = new BABYLON.StandardMaterial("material01", scene);
-        material.emissiveColor = BABYLON.Color3.Red();
+        material.emissiveColor = this.discColor;
         disc.material = material;
         this.discs.push(disc);
         console.log("BaseCurveGraph::addPoint ", this.discs.length);
         this.discs[this.discs.length - 1].index = this.discs.length - 1;
         this.discs[this.discs.length - 1].curveIndex = this.graphIndex;
-        this.updateSpline(this.discs.length - 1);
+        this.pointAddedUpdateSpline();
     };
     BaseCurveGraph.prototype.updateCubicGroup = function (cubicGroup) {
         var curvePoints1 = this.cubicBezier(this.points[cubicGroup * 3 + 0], this.points[cubicGroup * 3 + 1], this.points[cubicGroup * 3 + 2], this.points[cubicGroup * 3 + 3], 50);
@@ -516,7 +521,6 @@ var ComplexCurvePlane = (function (_super) {
                 newPosition = pickinfo.pickedPoint;
             }
             if (newPosition) {
-                console.log("onPointerMove", newPosition, this.currentPointIndex, this.currentCurveIndex);
                 if (this.curveArray[this.currentCurveIndex]) {
                     this.curveArray[this.currentCurveIndex].updateGraphPoint(this.currentPointIndex, newPosition);
                 }

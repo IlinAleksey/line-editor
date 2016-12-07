@@ -64,6 +64,7 @@ abstract class BaseCurveGraph implements InteractiveGraph{
     protected discs: any[];
     protected scene: BABYLON.Scene;
     protected graphIndex: number;
+    protected discColor: BABYLON.Color3;
     private cubicBezier(v0: BABYLON.Vector3, v1: BABYLON.Vector3, v2: BABYLON.Vector3, v3: BABYLON.Vector3, nb: number){
         let bez:BABYLON.Vector3[]  = [];
 	    var step = 1 / nb;
@@ -100,11 +101,12 @@ abstract class BaseCurveGraph implements InteractiveGraph{
             this.curves[index/4] =  BABYLON.Mesh.CreateLines("name", curvePoints, this.scene, true);
         }
     }
-    constructor(name:string, points: BABYLON.Vector2[], scene: BABYLON.Scene, graphIndex: number = 0){
+    constructor(name:string, points: BABYLON.Vector2[], scene: BABYLON.Scene, graphIndex: number = 0, discColor: BABYLON.Color3 = BABYLON.Color3.Red()){
         this.graphIndex = graphIndex;
         this.scene = scene;
         this.points = [];
         this.discs = [];
+        this.discColor = discColor;
         for (var p of points){
             let point: BABYLON.Vector3 = new BABYLON.Vector3(p.x, p.y, 0);
             this.points.push(point);
@@ -121,6 +123,9 @@ abstract class BaseCurveGraph implements InteractiveGraph{
         this.curves = [];
         this.initCurves();
     }
+    protected pointAddedUpdateSpline(){
+        this.updateSpline(this.discs.length - 1);
+    }
     public addPoint(point: BABYLON.Vector3) : void{
 
             this.points.push(point);
@@ -129,14 +134,14 @@ abstract class BaseCurveGraph implements InteractiveGraph{
             // let elevatedPoint = BABYLON
             disc.translate(point, 1);
             var material = new BABYLON.StandardMaterial("material01", scene);
-            material.emissiveColor = BABYLON.Color3.Red();
+            material.emissiveColor = this.discColor;
             disc.material = material;
             this.discs.push(disc);
             console.log("BaseCurveGraph::addPoint ", this.discs.length);
             this.discs[this.discs.length - 1].index = this.discs.length - 1;
             this.discs[this.discs.length - 1].curveIndex = this.graphIndex;
 
-            this.updateSpline(this.discs.length - 1);
+            this.pointAddedUpdateSpline();
 
     }
     protected updateCubicGroup(cubicGroup: number){
